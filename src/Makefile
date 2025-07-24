@@ -12,7 +12,7 @@ CC=cc
 #
 CFLAGS=-O
 
-# Paths for the Boehm conservative garbage collector.
+# Path for Boehm garbage collector files.
 #
 BDW_PATH=/opt/homebrew/opt/bdw-gc
 
@@ -25,6 +25,8 @@ LIB_PATH=-L. -L$(BDW_PATH)/lib
 # in scheme_number.c we need the Boehm GC.
 #
 LIBS=-lm -lgc
+
+all: libscheme.dylib scheme
 
 OBJS =  scheme_alloc.o \
 	scheme_bool.o \
@@ -71,8 +73,8 @@ SRCS =  scheme_alloc.c \
 libscheme.dylib: $(OBJS)
 	$(CC) -dynamiclib -o libscheme.dylib $(OBJS)
 
-test: libscheme.dylib main.o 
-	$(CC) $(CFLAGS) -o test main.o -L. -lscheme -lm
+scheme: libscheme.dylib main.o 
+	$(CC) $(CFLAGS) -o scheme main.o $(LIB_PATH) -lscheme -lm
 
 clean:
-	/bin/rm -f $(OBJS) main.o libscheme.dylib test *~
+	/bin/rm -f $(OBJS) main.o libscheme.dylib scheme

@@ -56,6 +56,7 @@ main(int argc, char *argv[])
 	}
     }
   /* enter read-eval-print loop */
+  printf ("libscheme Scheme interpreter\n");
   do
     {
       printf ("> ");

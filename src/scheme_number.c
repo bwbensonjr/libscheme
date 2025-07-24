@@ -240,6 +240,7 @@ zero_p (int argc, Scheme_Object *argv[])
   else
     {
       scheme_signal_error ("zero?: arg must be a number");
+      return scheme_false;
     }
 }
 
@@ -258,6 +259,7 @@ positive_p (int argc, Scheme_Object *argv[])
   else
     {
       scheme_signal_error ("positive?: arg must be a number");
+      return scheme_false;
     }
 }
 
@@ -276,6 +278,7 @@ negative_p (int argc, Scheme_Object *argv[])
   else
     {
       scheme_signal_error ("negative?: arg must be a number");
+      return scheme_false;
     }
 }
 
@@ -294,6 +297,7 @@ odd_p (int argc, Scheme_Object *argv[])
   else
     {
       scheme_signal_error ("odd?: arg must be a number");
+      return scheme_false;
     }
 }
 
@@ -312,6 +316,7 @@ even_p (int argc, Scheme_Object *argv[])
   else
     {
       scheme_signal_error ("even?: arg must be a number");
+      return scheme_false;
     }
 }
 
@@ -442,6 +447,11 @@ abs_prim (int argc, Scheme_Object *argv[])
   else if (SCHEME_DBLP(argv[0]))
     {
       return (scheme_make_double (fabs (SCHEME_DBL_VAL(argv[0]))));
+    }
+  else
+    {
+      scheme_signal_error ("abs: arg must be a number");
+      return scheme_false;
     }
 }
 
@@ -633,6 +643,7 @@ floor_prim (int argc, Scheme_Object *argv[])
   else
     {
       scheme_signal_error ("floor: arg must be a number");
+      return scheme_false;
     }
 }
 
@@ -651,6 +662,7 @@ ceiling (int argc, Scheme_Object *argv[])
   else
     {
       scheme_signal_error ("ceiling: arg must be a number");
+      return scheme_false;
     }
 }
 
@@ -669,6 +681,7 @@ truncate (int argc, Scheme_Object *argv[])
   else
     {
       scheme_signal_error ("truncate: arg must be a number");
+      return scheme_false;
     }
 }
 
@@ -700,6 +713,7 @@ scheme_round (int argc, Scheme_Object *argv[])
   else
     {
       scheme_signal_error ("round: arg must be a number");
+      return scheme_false;
     }
 }
 
@@ -715,6 +729,7 @@ atan_prim (int argc, Scheme_Object *argv[])
 {
   SCHEME_ASSERT ((argc==1 || argc==2), "atan: wrong number of args");
   scheme_signal_error ("atan: unimplemented");
+  return scheme_false;
 }
 
 static Scheme_Object *
@@ -732,6 +747,7 @@ sqrt_prim (int argc, Scheme_Object *argv[])
   else
     {
       scheme_signal_error ("sqrt: arg must be a number");
+      return scheme_false;
     }
 }
 
@@ -753,6 +769,7 @@ exact_to_inexact (int argc, Scheme_Object *argv[])
   else
     {
       scheme_signal_error ("exact->inexact: arg must be a number");
+      return scheme_false;
     }
 }
 
@@ -771,6 +788,7 @@ inexact_to_exact (int argc, Scheme_Object *argv[])
   else
     {
       scheme_signal_error ("inexact->exact: arg must be a number");
+      return scheme_false;
     }
 }
 
@@ -799,6 +817,11 @@ number_to_string (int argc, Scheme_Object *argv[])
   else if (SCHEME_DBLP(argv[0]))
     {
       return (double_to_string (SCHEME_DBL_VAL(argv[0])));
+    }
+  else
+    {
+      scheme_signal_error ("number->string: arg must be a number");
+      return scheme_false;
     }
 }
 
