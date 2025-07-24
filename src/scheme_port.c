@@ -24,6 +24,7 @@
 
 #include "scheme.h"
 #include <stdio.h>
+#include <string.h>
 
 #define HAS_STANDARD_IOB 1
 /* #define HAS_GNU_IOB 1 */
@@ -235,14 +236,22 @@ static int
 file_char_ready (Scheme_Input_Port *port)
 {
   FILE *fp = (FILE *) port->port_data;
-#ifdef HAS_STANDARD_IOB  
-  return (fp->_cnt);
-#elif HAS_GNU_IOB
-  return (fp->_egptr - fp->_gptr);
-#else
-  scheme_warning ("char-ready? always returns #f on this platform");
-  return (scheme_false);
-#endif
+  
+  // Use a more portable approach
+  // Check if we can read without blocking by trying to peek at the next character
+  int pos = ftell(fp);
+  if (pos == -1) {
+    // If ftell fails, we can't determine readiness reliably
+    return 1; // Assume ready
+  }
+  
+  int ch = fgetc(fp);
+  if (ch == EOF) {
+    return 0; // No character available
+  } else {
+    ungetc(ch, fp); // Put the character back
+    return 1; // Character is available
+  }
 }
 
 static void

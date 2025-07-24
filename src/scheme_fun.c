@@ -29,6 +29,7 @@
 Scheme_Object *scheme_prim_type;
 Scheme_Object *scheme_closure_type;
 Scheme_Object *scheme_cont_type;
+static Scheme_Object *continuation_return_value = NULL;
 
 /* locals */
 static Scheme_Object *scheme_collect_rest (int num_rest, Scheme_Object **rest);
@@ -222,7 +223,8 @@ scheme_apply (Scheme_Object *rator, int num_rands, Scheme_Object **rands)
     {
       SCHEME_ASSERT ((num_rands == 1),
 		     "apply: wrong number of args to continuation procedure");
-      longjmp ((int *)SCHEME_PTR_VAL(rator), (int)rands[0]);
+      continuation_return_value = rands[0];
+      longjmp (*((jmp_buf *)SCHEME_PTR_VAL(rator)), 1);      
     }
   else if (fun_type == scheme_struct_proc_type)
     {
@@ -232,6 +234,7 @@ scheme_apply (Scheme_Object *rator, int num_rands, Scheme_Object **rands)
   else
     {
       scheme_signal_error ("apply: bad procedure");
+      return scheme_null;
     }
 }
 
@@ -420,14 +423,17 @@ static Scheme_Object *
 call_cc (int argc, Scheme_Object *argv[])
 {
   jmp_buf buf;
-  Scheme_Object *ret, *cont;
+  int jmp_ret;
+  Scheme_Object *cont;
 
   SCHEME_ASSERT ((argc == 1), "call-with-current-continuation: wrong number of args");
   SCHEME_ASSERT (SCHEME_PROCP (argv[0]), 
 		 "call-with-current-continuation: arg must be a procedure");
-  if (ret = (Scheme_Object *)setjmp (buf))
+  
+  jmp_ret = setjmp (buf);
+  if (jmp_ret != 0)
     {
-      return (ret);
+      return continuation_return_value;
     }
   else
     {

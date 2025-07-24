@@ -25,6 +25,8 @@
 #include "scheme.h"
 #include <string.h>
 
+#define NO_GC 1
+
 #ifdef NO_GC
 #define MALLOC malloc
 #else

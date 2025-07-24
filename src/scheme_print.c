@@ -23,6 +23,7 @@
 */
 
 #include "scheme.h"
+#include <string.h>
 
 #define SCHEME_MAX_PRINT_SIZE 256000
 
@@ -174,7 +175,7 @@ print_string (char *buf, int index, Scheme_Object *string, int escaped)
 	  buf[index++] = '\\';
 	}
       buf[index++] = *str;
-      *str++;
+      str++;
     }
   if ( escaped )
     {
