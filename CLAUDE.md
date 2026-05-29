@@ -58,8 +58,25 @@ Each Scheme type or feature lives in its own file and exposes a `scheme_init_<na
 
 Both `main.c` files use the same shape: build env → load command-line files → enter `read → SCHEME_CATCH_ERROR(eval) → write` loop. `SCHEME_CATCH_ERROR` is a `setjmp` macro — primitives that detect bad input call `scheme_signal_error(...)` which `longjmp`s back to it.
 
+## Rust port
+
+A from-scratch re-implementation in idiomatic, safe Rust lives in `crates/` (a cargo workspace), preserving the same design principles and a module-per-`scheme_*.c` structure. The C sources under `src/` are the reference; they are untouched by the port.
+
+```sh
+cargo test                              # unit + integration + the R4RS golden suite
+cargo run -p scheme                     # the REPL (port of src/main.c)
+cargo run -p posix --bin posix_scheme   # REPL + POSIX extensions (port of src/posix/)
+```
+
+- **Crates:** `crates/libscheme` (the interpreter as a library), `crates/scheme` (REPL binary), `crates/posix` (a *separate* extension crate — `libc` is confined here so the core stays `unsafe`-free).
+- **C → Rust mapping:** `Scheme_Object` union → `enum Value` (the discriminant *is* the type); runtime nominal types (`define-struct`, posix `<stat>`) carry a `Gc<TypeObject>` compared by pointer identity. `setjmp`/`longjmp` errors and escape `call/cc` → a `Result<Value, SchemeError>` channel (`SchemeError::ContinuationInvoked` is caught by the matching `call/cc` frame). Boehm GC → the `gc` crate (`Gc<GcCell<T>>`); the evaluator **trampolines** tail calls (the C tree-walker has no TCO).
+- **Load-bearing invariants (easy to break unknowingly):** each `scheme_*.c` maps to a module of the same name, and `Interp::basic_env` calls each module's `init` in the *same bootstrap order* as `scheme_basic_env` — append new inits to the END. Symbol interning is **case-sensitive**; case folding happens in the *reader* (so `string->symbol` preserves case, per R4RS §6.4). `Interp::register` / `register_value` / `register_syntax` + `make_type` are the public extension API — built-ins and the posix crate use the identical path.
+- **Acceptance test:** `crates/libscheme/tests/r4rs_suite.rs` drives the original `src/test.scm` (copied to `crates/libscheme/tests/fixtures/`). The core suite plus `(test-sc4)` and `(test-inexact)` must pass; `(test-cont)` is *expected* to fail gracefully (escape-only continuations, like the C version — surfaced as an error, never UB). CI gates `cargo test`, `clippy -D warnings`, and `cargo fmt --check`.
+- For the full design rationale and phase-by-phase mapping, see `RUST_PORT_FEASIBILITY.md`.
+
 ## Code style
 
 - C source is formatted with **clang-format using the WebKit style** (per the most recent commit). Run `clang-format -i -style=WebKit src/*.c src/*.h` before committing C changes.
+- Rust source is formatted with **rustfmt** and must be clippy-clean under `-D warnings` — CI enforces both. Run `cargo fmt --all` and `cargo clippy --workspace --all-targets` before committing Rust changes. Note CI tracks `stable`, which may be a newer clippy than a local toolchain, so new lints can surface only in CI.
 - The codebase predates C99 — function definitions still use the K&R-ish split-line return-type-on-its-own-line form in many places. Match the surrounding style of the file you're editing rather than modernizing.
 - No test framework — correctness is checked by loading `src/test.scm` (Aubrey Jaffer's R4RS test suite) at the REPL and running `(test-sc4)` / `(test-inexact)`. `(test-cont)` is documented as always failing because libscheme does not support upward continuations.
