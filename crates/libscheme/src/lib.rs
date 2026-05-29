@@ -20,11 +20,15 @@ pub mod env;
 pub mod error;
 pub mod interner;
 pub mod interp;
+pub mod printer;
+pub mod reader;
 pub mod value;
 
 pub use error::{SchemeError, SchemeResult};
 pub use interner::Symbol;
 pub use interp::Interp;
+pub use printer::{display_to_string, write_to_string};
+pub use reader::Reader;
 pub use value::Value;
 
 #[cfg(test)]
