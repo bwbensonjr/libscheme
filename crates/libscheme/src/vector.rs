@@ -23,7 +23,9 @@ pub fn init(it: &mut Interp) {
         let fill = a.get(1).cloned().unwrap_or(Value::Bool(false));
         Ok(Value::make_vector(vec![fill; len as usize]))
     });
-    it.register("vector", Arity::AtLeast(0), |_it, a| Ok(Value::make_vector(a.to_vec())));
+    it.register("vector", Arity::AtLeast(0), |_it, a| {
+        Ok(Value::make_vector(a.to_vec()))
+    });
     it.register("vector-length", Arity::Exact(1), |_it, a| match &a[0] {
         Value::Vector(v) => Ok(Value::Int(v.borrow().len() as i64)),
         _ => Err(SchemeError::msg("vector-length: arg must be a vector")),
@@ -71,13 +73,15 @@ pub fn init(it: &mut Interp) {
         }
         _ => Err(SchemeError::msg("vector-fill!: first arg must be a vector")),
     });
-    it.register("vector-append", Arity::Exact(2), |_it, a| match (&a[0], &a[1]) {
-        (Value::Vector(x), Value::Vector(y)) => {
-            let mut out = x.borrow().clone();
-            out.extend(y.borrow().iter().cloned());
-            Ok(Value::make_vector(out))
+    it.register("vector-append", Arity::Exact(2), |_it, a| {
+        match (&a[0], &a[1]) {
+            (Value::Vector(x), Value::Vector(y)) => {
+                let mut out = x.borrow().clone();
+                out.extend(y.borrow().iter().cloned());
+                Ok(Value::make_vector(out))
+            }
+            _ => Err(SchemeError::msg("vector-append: both args must be vectors")),
         }
-        _ => Err(SchemeError::msg("vector-append: both args must be vectors")),
     });
 }
 

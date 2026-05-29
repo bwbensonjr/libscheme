@@ -109,7 +109,9 @@ fn define(it: &mut Interp, form: &Value, env: &Gc<Env>) -> SchemeResult<Tail> {
             bind_define(it, env, name, closure);
             Ok(Tail::done(Value::Symbol(name)))
         }
-        _ => Err(SchemeError::msg("define: second arg must be symbol or list")),
+        _ => Err(SchemeError::msg(
+            "define: second arg must be symbol or list",
+        )),
     }
 }
 
@@ -141,7 +143,10 @@ fn set_bang(it: &mut Interp, form: &Value, env: &Gc<Env>) -> SchemeResult<Tail> 
         // C returns the assigned value.
         Ok(Tail::done(val))
     } else {
-        Err(SchemeError::msg(format!("set!: var unbound: {}", it.resolve(name))))
+        Err(SchemeError::msg(format!(
+            "set!: var unbound: {}",
+            it.resolve(name)
+        )))
     }
 }
 

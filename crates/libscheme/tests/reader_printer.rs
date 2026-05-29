@@ -35,7 +35,8 @@ fn write_test_obj_display_matches_c() {
 /// read → write round-trip, exercising nested quote/define structure.
 #[test]
 fn load_test_obj_roundtrips() {
-    let src = r#"(define foo (quote (#t #f #\a () 9739 -3 . #((test) "te \" \" st" "" test #() b c))))"#;
+    let src =
+        r#"(define foo (quote (#t #f #\a () 9739 -3 . #((test) "te \" \" st" "" test #() b c))))"#;
     let mut it = Interp::new();
     let mut r = Reader::new(src);
     let obj = r.read(&mut it).expect("read load-test-obj");

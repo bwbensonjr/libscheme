@@ -195,6 +195,9 @@ mod tests {
 
     #[test]
     fn read_write_roundtrip_nested() {
-        assert_eq!(roundtrip_write("(a (b c) #(1 #\\x \"hi\"))"), "(a (b c) #(1 #\\x \"hi\"))");
+        assert_eq!(
+            roundtrip_write("(a (b c) #(1 #\\x \"hi\"))"),
+            "(a (b c) #(1 #\\x \"hi\"))"
+        );
     }
 }

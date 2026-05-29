@@ -59,9 +59,15 @@ pub fn init(it: &mut Interp) {
 
     // Predicates. number?/complex?/real? accept any number; integer?/rational?/
     // exact? accept only integers; inexact? accepts only doubles (scheme_number.c:159).
-    it.register("number?", Arity::Exact(1), |_it, a| Ok(Value::Bool(is_number(&a[0]))));
-    it.register("complex?", Arity::Exact(1), |_it, a| Ok(Value::Bool(is_number(&a[0]))));
-    it.register("real?", Arity::Exact(1), |_it, a| Ok(Value::Bool(is_number(&a[0]))));
+    it.register("number?", Arity::Exact(1), |_it, a| {
+        Ok(Value::Bool(is_number(&a[0])))
+    });
+    it.register("complex?", Arity::Exact(1), |_it, a| {
+        Ok(Value::Bool(is_number(&a[0])))
+    });
+    it.register("real?", Arity::Exact(1), |_it, a| {
+        Ok(Value::Bool(is_number(&a[0])))
+    });
     it.register("rational?", Arity::Exact(1), |_it, a| {
         Ok(Value::Bool(matches!(a[0], Value::Int(_))))
     });
@@ -77,11 +83,21 @@ pub fn init(it: &mut Interp) {
 
     // n-ary comparisons (scheme_number.c:214). Compared numerically with
     // promotion, pairwise across all args.
-    it.register("=", Arity::AtLeast(1), |_it, a| nary_cmp(a, "=", |x, y| x == y));
-    it.register("<", Arity::AtLeast(1), |_it, a| nary_cmp(a, "<", |x, y| x < y));
-    it.register(">", Arity::AtLeast(1), |_it, a| nary_cmp(a, ">", |x, y| x > y));
-    it.register("<=", Arity::AtLeast(1), |_it, a| nary_cmp(a, "<=", |x, y| x <= y));
-    it.register(">=", Arity::AtLeast(1), |_it, a| nary_cmp(a, ">=", |x, y| x >= y));
+    it.register("=", Arity::AtLeast(1), |_it, a| {
+        nary_cmp(a, "=", |x, y| x == y)
+    });
+    it.register("<", Arity::AtLeast(1), |_it, a| {
+        nary_cmp(a, "<", |x, y| x < y)
+    });
+    it.register(">", Arity::AtLeast(1), |_it, a| {
+        nary_cmp(a, ">", |x, y| x > y)
+    });
+    it.register("<=", Arity::AtLeast(1), |_it, a| {
+        nary_cmp(a, "<=", |x, y| x <= y)
+    });
+    it.register(">=", Arity::AtLeast(1), |_it, a| {
+        nary_cmp(a, ">=", |x, y| x >= y)
+    });
 
     // sign / parity predicates.
     it.register("zero?", Arity::Exact(1), |_it, a| {
@@ -105,8 +121,12 @@ pub fn init(it: &mut Interp) {
     });
 
     // arithmetic.
-    it.register("+", Arity::AtLeast(0), |_it, a| fold(a, "+", Num::Int(0), bin_add));
-    it.register("*", Arity::AtLeast(0), |_it, a| fold(a, "*", Num::Int(1), bin_mul));
+    it.register("+", Arity::AtLeast(0), |_it, a| {
+        fold(a, "+", Num::Int(0), bin_add)
+    });
+    it.register("*", Arity::AtLeast(0), |_it, a| {
+        fold(a, "*", Num::Int(1), bin_mul)
+    });
     it.register("-", Arity::AtLeast(1), |_it, a| minus(a));
     it.register("/", Arity::AtLeast(1), |_it, a| divide(a));
     it.register("max", Arity::AtLeast(1), |_it, a| twoary(a, "max", bin_max));
@@ -116,25 +136,45 @@ pub fn init(it: &mut Interp) {
         Num::Dbl(d) => Ok(Value::Double(d.abs())),
     });
 
-    it.register("quotient", Arity::Exact(2), |_it, a| int_div(a, "quotient", |x, y| x / y));
-    it.register("remainder", Arity::Exact(2), |_it, a| int_div(a, "remainder", |x, y| x % y));
+    it.register("quotient", Arity::Exact(2), |_it, a| {
+        int_div(a, "quotient", |x, y| x / y)
+    });
+    it.register("remainder", Arity::Exact(2), |_it, a| {
+        int_div(a, "remainder", |x, y| x % y)
+    });
     it.register("modulo", Arity::Exact(2), |_it, a| modulo(a));
-    it.register("gcd", Arity::AtLeast(0), |_it, a| fold(a, "gcd", Num::Int(0), bin_gcd));
-    it.register("lcm", Arity::AtLeast(0), |_it, a| fold(a, "lcm", Num::Int(1), bin_lcm));
+    it.register("gcd", Arity::AtLeast(0), |_it, a| {
+        fold(a, "gcd", Num::Int(0), bin_gcd)
+    });
+    it.register("lcm", Arity::AtLeast(0), |_it, a| {
+        fold(a, "lcm", Num::Int(1), bin_lcm)
+    });
 
     // rounding — always returns an integer, matching C.
-    it.register("floor", Arity::Exact(1), |_it, a| round_op(a, "floor", f64::floor));
-    it.register("ceiling", Arity::Exact(1), |_it, a| round_op(a, "ceiling", f64::ceil));
-    it.register("truncate", Arity::Exact(1), |_it, a| round_op(a, "truncate", f64::trunc));
-    it.register("round", Arity::Exact(1), |_it, a| round_op(a, "round", round_half_up));
+    it.register("floor", Arity::Exact(1), |_it, a| {
+        round_op(a, "floor", f64::floor)
+    });
+    it.register("ceiling", Arity::Exact(1), |_it, a| {
+        round_op(a, "ceiling", f64::ceil)
+    });
+    it.register("truncate", Arity::Exact(1), |_it, a| {
+        round_op(a, "truncate", f64::trunc)
+    });
+    it.register("round", Arity::Exact(1), |_it, a| {
+        round_op(a, "round", round_half_up)
+    });
 
     // transcendental — all return doubles.
     it.register("exp", Arity::Exact(1), |_it, a| unary_f(a, "exp", f64::exp));
     it.register("log", Arity::Exact(1), |_it, a| unary_f(a, "log", f64::ln));
     it.register("sin", Arity::Exact(1), |_it, a| unary_f(a, "sin", f64::sin));
     it.register("cos", Arity::Exact(1), |_it, a| unary_f(a, "cos", f64::cos));
-    it.register("asin", Arity::Exact(1), |_it, a| unary_f(a, "asin", f64::asin));
-    it.register("acos", Arity::Exact(1), |_it, a| unary_f(a, "acos", f64::acos));
+    it.register("asin", Arity::Exact(1), |_it, a| {
+        unary_f(a, "asin", f64::asin)
+    });
+    it.register("acos", Arity::Exact(1), |_it, a| {
+        unary_f(a, "acos", f64::acos)
+    });
     it.register("atan", Arity::Range(1, 2), |_it, a| {
         let y = num(&a[0], "atan")?.as_f64();
         if a.len() == 2 {
@@ -144,14 +184,14 @@ pub fn init(it: &mut Interp) {
             Ok(Value::Double(y.atan()))
         }
     });
-    it.register("sqrt", Arity::Exact(1), |_it, a| unary_f(a, "sqrt", f64::sqrt));
+    it.register("sqrt", Arity::Exact(1), |_it, a| {
+        unary_f(a, "sqrt", f64::sqrt)
+    });
     it.register("expt", Arity::Exact(2), |_it, a| {
         // C uses pow over doubles; preserve exact^nonneg-int as exact for the
         // common integer case so (expt 2 10) stays an integer.
         match (&a[0], &a[1]) {
-            (Value::Int(b), Value::Int(e)) if *e >= 0 => {
-                Ok(Value::Int(b.pow(*e as u32)))
-            }
+            (Value::Int(b), Value::Int(e)) if *e >= 0 => Ok(Value::Int(b.pow(*e as u32))),
             _ => {
                 let b = num(&a[0], "expt")?.as_f64();
                 let e = num(&a[1], "expt")?.as_f64();
@@ -163,9 +203,11 @@ pub fn init(it: &mut Interp) {
     it.register("exact->inexact", Arity::Exact(1), |_it, a| {
         Ok(Value::Double(num(&a[0], "exact->inexact")?.as_f64()))
     });
-    it.register("inexact->exact", Arity::Exact(1), |_it, a| match num(&a[0], "inexact->exact")? {
-        Num::Int(i) => Ok(Value::Int(i)),
-        Num::Dbl(d) => Ok(Value::Int(d as i64)),
+    it.register("inexact->exact", Arity::Exact(1), |_it, a| {
+        match num(&a[0], "inexact->exact")? {
+            Num::Int(i) => Ok(Value::Int(i)),
+            Num::Dbl(d) => Ok(Value::Int(d as i64)),
+        }
     });
 
     it.register("number->string", Arity::Range(1, 2), number_to_string);
@@ -214,7 +256,11 @@ fn bin_gcd(a: Num, b: Num) -> Num {
 }
 fn bin_lcm(a: Num, b: Num) -> Num {
     let (x, y) = (a.as_f64().abs() as i64, b.as_f64().abs() as i64);
-    let l = if x == 0 || y == 0 { 0 } else { x / gcd_i64(x, y) * y };
+    let l = if x == 0 || y == 0 {
+        0
+    } else {
+        x / gcd_i64(x, y) * y
+    };
     match (a, b) {
         (Num::Int(_), Num::Int(_)) => Num::Int(l),
         _ => Num::Dbl(l as f64),
@@ -313,7 +359,11 @@ fn modulo(args: &[Value]) -> SchemeResult {
     }
     let i = i1 % i2;
     // Adjust toward the divisor's sign (scheme_number.c:481).
-    let adjusted = if (i2 < 0 && i > 0) || (i2 > 0 && i < 0) { i + i2 } else { i };
+    let adjusted = if (i2 < 0 && i > 0) || (i2 > 0 && i < 0) {
+        i + i2
+    } else {
+        i
+    };
     // C always returns an integer for modulo.
     Ok(Value::Int(adjusted))
 }
@@ -352,7 +402,11 @@ fn number_to_string(_it: &mut Interp, args: &[Value]) -> SchemeResult {
                 8 => format!("{i:o}"),
                 10 => format!("{i}"),
                 16 => format!("{i:x}"),
-                _ => return Err(SchemeError::msg("number->string: radix must be 2, 8, 10 or 16")),
+                _ => {
+                    return Err(SchemeError::msg(
+                        "number->string: radix must be 2, 8, 10 or 16",
+                    ))
+                }
             };
             Ok(Value::make_string(s))
         }
@@ -364,7 +418,11 @@ fn number_to_string(_it: &mut Interp, args: &[Value]) -> SchemeResult {
 fn string_to_number(_it: &mut Interp, args: &[Value]) -> SchemeResult {
     let s = match &args[0] {
         Value::Str(s) => s.borrow().clone(),
-        _ => return Err(SchemeError::msg("string->number: first arg must be a string")),
+        _ => {
+            return Err(SchemeError::msg(
+                "string->number: first arg must be a string",
+            ))
+        }
     };
     let base = match args.get(1) {
         Some(Value::Int(b)) => *b as u32,
@@ -400,9 +458,16 @@ mod tests {
     #[test]
     fn contagion() {
         // int + int = int; int + double = double
-        assert!(one(&[Value::Int(2), Value::Int(3)], |_it, a| fold(a, "+", Num::Int(0), bin_add))
-            .eq(&Value::Int(5)));
-        match one(&[Value::Int(2), Value::Double(0.5)], |_it, a| fold(a, "+", Num::Int(0), bin_add)) {
+        assert!(one(&[Value::Int(2), Value::Int(3)], |_it, a| fold(
+            a,
+            "+",
+            Num::Int(0),
+            bin_add
+        ))
+        .eq(&Value::Int(5)));
+        match one(&[Value::Int(2), Value::Double(0.5)], |_it, a| {
+            fold(a, "+", Num::Int(0), bin_add)
+        }) {
             Value::Double(d) => assert_eq!(d, 2.5),
             _ => panic!("expected double"),
         }
@@ -419,17 +484,27 @@ mod tests {
     #[test]
     fn modulo_follows_divisor_sign() {
         // (modulo 7 -3) => -2 ; (modulo -7 3) => 2
-        assert!(modulo(&[Value::Int(7), Value::Int(-3)]).unwrap().eq(&Value::Int(-2)));
-        assert!(modulo(&[Value::Int(-7), Value::Int(3)]).unwrap().eq(&Value::Int(2)));
-        // remainder keeps the dividend's sign.
-        assert!(int_div(&[Value::Int(7), Value::Int(-3)], "remainder", |x, y| x % y)
+        assert!(modulo(&[Value::Int(7), Value::Int(-3)])
             .unwrap()
-            .eq(&Value::Int(1)));
+            .eq(&Value::Int(-2)));
+        assert!(modulo(&[Value::Int(-7), Value::Int(3)])
+            .unwrap()
+            .eq(&Value::Int(2)));
+        // remainder keeps the dividend's sign.
+        assert!(
+            int_div(&[Value::Int(7), Value::Int(-3)], "remainder", |x, y| x % y)
+                .unwrap()
+                .eq(&Value::Int(1))
+        );
     }
 
     #[test]
     fn floor_returns_integer() {
-        assert!(round_op(&[Value::Double(3.7)], "floor", f64::floor).unwrap().eq(&Value::Int(3)));
-        assert!(round_op(&[Value::Double(-3.2)], "floor", f64::floor).unwrap().eq(&Value::Int(-4)));
+        assert!(round_op(&[Value::Double(3.7)], "floor", f64::floor)
+            .unwrap()
+            .eq(&Value::Int(3)));
+        assert!(round_op(&[Value::Double(-3.2)], "floor", f64::floor)
+            .unwrap()
+            .eq(&Value::Int(-4)));
     }
 }

@@ -188,7 +188,11 @@ impl Interp {
     /// Bind a closure's parameters to `args`, producing the call frame and the
     /// (internal-define-rewritten) body. Mirrors the parameter binding and
     /// internal-define handling of `scheme_apply` (scheme_fun.c:106-183).
-    fn closure_frame(&mut self, c: Gc<Closure>, args: &[Value]) -> SchemeResult<(Gc<Env>, Vec<Value>)> {
+    fn closure_frame(
+        &mut self,
+        c: Gc<Closure>,
+        args: &[Value],
+    ) -> SchemeResult<(Gc<Env>, Vec<Value>)> {
         let params = c.params.clone();
         let (mut names, rest) = parse_params(&params)?;
 
@@ -318,7 +322,12 @@ impl Interp {
 /// Parse a lambda parameter list into (fixed names, optional rest name).
 /// Accepts `(a b c)`, `(a b . rest)`, and a bare symbol `rest`
 /// (scheme_fun.c:111-122 + the improper-tail rest case).
-fn parse_params(params: &Value) -> SchemeResult<(Vec<crate::interner::Symbol>, Option<crate::interner::Symbol>)> {
+fn parse_params(
+    params: &Value,
+) -> SchemeResult<(
+    Vec<crate::interner::Symbol>,
+    Option<crate::interner::Symbol>,
+)> {
     let mut names = Vec::new();
     let mut cur = params.clone();
     loop {

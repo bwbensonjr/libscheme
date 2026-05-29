@@ -69,14 +69,18 @@ pub fn init(it: &mut Interp) {
             p.borrow_mut().open = false;
             Ok(Value::Bool(true))
         }
-        _ => Err(SchemeError::msg("close-input-port: arg must be an input port")),
+        _ => Err(SchemeError::msg(
+            "close-input-port: arg must be an input port",
+        )),
     });
     it.register("close-output-port", Arity::Exact(1), |_it, a| match &a[0] {
         Value::OutputPort(p) => {
             p.borrow_mut().open = false;
             Ok(Value::Bool(true))
         }
-        _ => Err(SchemeError::msg("close-output-port: arg must be an output port")),
+        _ => Err(SchemeError::msg(
+            "close-output-port: arg must be an output port",
+        )),
     });
 
     // call-with-* : open, apply the proc to the port, close.
@@ -142,7 +146,9 @@ pub fn init(it: &mut Interp) {
 
     // writing.
     it.register("write", Arity::Range(1, 2), |it, a| out_write(it, a, true));
-    it.register("display", Arity::Range(1, 2), |it, a| out_write(it, a, false));
+    it.register("display", Arity::Range(1, 2), |it, a| {
+        out_write(it, a, false)
+    });
     it.register("newline", Arity::Range(0, 1), |it, a| {
         let port = out_port(it, a, 0, "newline")?;
         write_to_port(&port, "\n")?;
@@ -151,7 +157,11 @@ pub fn init(it: &mut Interp) {
     it.register("write-char", Arity::Range(1, 2), |it, a| {
         let c = match &a[0] {
             Value::Char(c) => *c,
-            _ => return Err(SchemeError::msg("write-char: first arg must be a character")),
+            _ => {
+                return Err(SchemeError::msg(
+                    "write-char: first arg must be a character",
+                ))
+            }
         };
         let port = out_port(it, a, 1, "write-char")?;
         write_to_port(&port, &c.to_string())?;
@@ -195,7 +205,9 @@ fn str_arg(v: &Value, who: &str) -> SchemeResult<String> {
 fn in_port(it: &Interp, args: &[Value], who: &str) -> SchemeResult<Value> {
     match args.first() {
         Some(p @ Value::InputPort(_)) => Ok(p.clone()),
-        Some(_) => Err(SchemeError::msg(format!("{who}: arg must be an input port"))),
+        Some(_) => Err(SchemeError::msg(format!(
+            "{who}: arg must be an input port"
+        ))),
         None => Ok(it.cur_in().expect("cur_in set")),
     }
 }

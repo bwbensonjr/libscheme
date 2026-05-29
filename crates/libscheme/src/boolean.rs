@@ -19,7 +19,13 @@ pub fn init(it: &mut Interp) {
     it.register("boolean?", Arity::Exact(1), |_it, a| {
         Ok(Value::Bool(matches!(a[0], Value::Bool(_))))
     });
-    it.register("eq?", Arity::Exact(2), |_it, a| Ok(Value::Bool(a[0].eq(&a[1]))));
-    it.register("eqv?", Arity::Exact(2), |_it, a| Ok(Value::Bool(a[0].eqv(&a[1]))));
-    it.register("equal?", Arity::Exact(2), |_it, a| Ok(Value::Bool(a[0].equal(&a[1]))));
+    it.register("eq?", Arity::Exact(2), |_it, a| {
+        Ok(Value::Bool(a[0].eq(&a[1])))
+    });
+    it.register("eqv?", Arity::Exact(2), |_it, a| {
+        Ok(Value::Bool(a[0].eqv(&a[1])))
+    });
+    it.register("equal?", Arity::Exact(2), |_it, a| {
+        Ok(Value::Bool(a[0].equal(&a[1])))
+    });
 }

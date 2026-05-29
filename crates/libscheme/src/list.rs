@@ -15,14 +15,22 @@ pub fn init(it: &mut Interp) {
     it.register_value("<empty-list>", Value::TypeObject(null_ty));
     it.register_value("<pair>", Value::TypeObject(pair_ty));
 
-    it.register("pair?", Arity::Exact(1), |_it, a| Ok(Value::Bool(a[0].is_pair())));
-    it.register("null?", Arity::Exact(1), |_it, a| Ok(Value::Bool(a[0].is_null())));
-    it.register("cons", Arity::Exact(2), |_it, a| Ok(Value::cons(a[0].clone(), a[1].clone())));
+    it.register("pair?", Arity::Exact(1), |_it, a| {
+        Ok(Value::Bool(a[0].is_pair()))
+    });
+    it.register("null?", Arity::Exact(1), |_it, a| {
+        Ok(Value::Bool(a[0].is_null()))
+    });
+    it.register("cons", Arity::Exact(2), |_it, a| {
+        Ok(Value::cons(a[0].clone(), a[1].clone()))
+    });
     it.register("car", Arity::Exact(1), |_it, a| {
-        a[0].car().ok_or_else(|| SchemeError::msg("car: arg must be pair"))
+        a[0].car()
+            .ok_or_else(|| SchemeError::msg("car: arg must be pair"))
     });
     it.register("cdr", Arity::Exact(1), |_it, a| {
-        a[0].cdr().ok_or_else(|| SchemeError::msg("cdr: arg must be pair"))
+        a[0].cdr()
+            .ok_or_else(|| SchemeError::msg("cdr: arg must be pair"))
     });
     it.register("set-car!", Arity::Exact(2), |_it, a| match &a[0] {
         Value::Pair(p) => {
@@ -39,7 +47,9 @@ pub fn init(it: &mut Interp) {
         _ => Err(SchemeError::msg("set-cdr!: first arg must be pair")),
     });
 
-    it.register("list?", Arity::Exact(1), |_it, a| Ok(Value::Bool(is_list(&a[0]))));
+    it.register("list?", Arity::Exact(1), |_it, a| {
+        Ok(Value::Bool(is_list(&a[0])))
+    });
     it.register("list", Arity::AtLeast(0), |_it, a| Ok(Value::list(a)));
     it.register("length", Arity::Exact(1), |_it, a| {
         a[0].list_len()
@@ -57,16 +67,21 @@ pub fn init(it: &mut Interp) {
     it.register("list-tail", Arity::Exact(2), |_it, a| list_tail(a));
     it.register("list-ref", Arity::Exact(2), |_it, a| {
         let tail = list_tail(a)?;
-        tail.car().ok_or_else(|| SchemeError::msg("list-ref: index too large"))
+        tail.car()
+            .ok_or_else(|| SchemeError::msg("list-ref: index too large"))
     });
 
     // membership / association, by the three equivalence predicates.
     it.register("memq", Arity::Exact(2), |_it, a| mem(a, "memq", Value::eq));
     it.register("memv", Arity::Exact(2), |_it, a| mem(a, "memv", Value::eqv));
-    it.register("member", Arity::Exact(2), |_it, a| mem(a, "member", Value::equal));
+    it.register("member", Arity::Exact(2), |_it, a| {
+        mem(a, "member", Value::equal)
+    });
     it.register("assq", Arity::Exact(2), |_it, a| ass(a, "assq", Value::eq));
     it.register("assv", Arity::Exact(2), |_it, a| ass(a, "assv", Value::eqv));
-    it.register("assoc", Arity::Exact(2), |_it, a| ass(a, "assoc", Value::equal));
+    it.register("assoc", Arity::Exact(2), |_it, a| {
+        ass(a, "assoc", Value::equal)
+    });
 
     // cXr accessors: each char after 'c' (read right-to-left) is a/d.
     for name in [
@@ -94,7 +109,9 @@ fn is_list(v: &Value) -> bool {
         if next.is_null() {
             return true;
         }
-        let Some(next2) = next.cdr() else { return false };
+        let Some(next2) = next.cdr() else {
+            return false;
+        };
         fast = next2;
         slow = slow.cdr().unwrap();
         if slow.eq(&fast) {
@@ -125,7 +142,11 @@ fn append(args: &[Value]) -> SchemeResult {
 fn list_tail(args: &[Value]) -> SchemeResult {
     let k = match &args[1] {
         Value::Int(n) if *n >= 0 => *n as usize,
-        _ => return Err(SchemeError::msg("list-tail: second arg must be a non-negative integer")),
+        _ => {
+            return Err(SchemeError::msg(
+                "list-tail: second arg must be a non-negative integer",
+            ))
+        }
     };
     let mut cur = args[0].clone();
     for _ in 0..k {
@@ -149,7 +170,9 @@ fn mem(args: &[Value], who: &str, eq: fn(&Value, &Value) -> bool) -> SchemeResul
         cur = cdr;
     }
     if !cur.is_null() {
-        return Err(SchemeError::msg(format!("{who}: second arg must be a list")));
+        return Err(SchemeError::msg(format!(
+            "{who}: second arg must be a list"
+        )));
     }
     Ok(Value::Bool(false))
 }
@@ -164,7 +187,11 @@ fn ass(args: &[Value], who: &str, eq: fn(&Value, &Value) -> bool) -> SchemeResul
         match car.car() {
             Some(key) if eq(&args[0], &key) => return Ok(car),
             Some(_) => {}
-            None => return Err(SchemeError::msg(format!("{who}: arg must be a list of pairs"))),
+            None => {
+                return Err(SchemeError::msg(format!(
+                    "{who}: arg must be a list of pairs"
+                )))
+            }
         }
         cur = cdr;
     }

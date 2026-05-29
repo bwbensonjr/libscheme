@@ -453,7 +453,10 @@ impl Value {
 /// Pointer-identity for two `Gc` handles — the Rust analogue of comparing two
 /// `Scheme_Object*`. Compares the address of the referent.
 pub fn gc_ptr_eq<T: Trace + ?Sized>(a: &Gc<T>, b: &Gc<T>) -> bool {
-    std::ptr::eq(a.as_ref() as *const T as *const (), b.as_ref() as *const T as *const ())
+    std::ptr::eq(
+        a.as_ref() as *const T as *const (),
+        b.as_ref() as *const T as *const (),
+    )
 }
 
 #[cfg(test)]

@@ -93,7 +93,7 @@ fn do_loop() {
                      (sum 0 (+ sum i)))
                     ((= i 5) sum))";
     assert_eq!(run(src), "10"); // 0+1+2+3+4
-    // do with a step-less variable
+                                // do with a step-less variable
     let src2 = "(do ((i 0 (+ i 1)) (x 'fixed)) ((= i 3) x))";
     assert_eq!(run(src2), "fixed");
 }
@@ -121,9 +121,15 @@ fn quasiquote_splicing() {
 #[test]
 fn quasiquote_nested() {
     // A nested quasiquote: the inner unquote is preserved one level down.
-    assert_eq!(run("`(a `(b ,(+ 1 2)))"), "(a (quasiquote (b (unquote (+ 1 2)))))");
+    assert_eq!(
+        run("`(a `(b ,(+ 1 2)))"),
+        "(a (quasiquote (b (unquote (+ 1 2)))))"
+    );
     // But an unquote at the outer level inside the nest IS evaluated.
-    assert_eq!(run("`(a `(b ,,(+ 1 2)))"), "(a (quasiquote (b (unquote 3))))");
+    assert_eq!(
+        run("`(a `(b ,,(+ 1 2)))"),
+        "(a (quasiquote (b (unquote 3))))"
+    );
 }
 
 #[test]

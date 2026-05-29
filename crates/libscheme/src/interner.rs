@@ -6,8 +6,13 @@
 //! `Copy` [`Symbol`] id. `eq?` on symbols then reduces to a `u32` comparison,
 //! exactly mirroring the C pointer-identity semantics.
 //!
-//! Like C (`scheme_intern_symbol` downcases via `scheme_add_global`), names are
-//! lowercased before interning so the reader and `add_global` agree on identity.
+//! Interning is **case-sensitive**: two names intern to the same [`Symbol`] iff
+//! they are byte-for-byte equal. Case folding lives in the *reader* (which
+//! lowercases identifiers before interning, matching C's `scheme_intern_symbol`
+//! downcasing), NOT here. This split is what lets `string->symbol` preserve case
+//! — `(string->symbol "Malvina")` keeps its capital M and is therefore not
+//! `eq?` to the reader's case-folded `'malvina`, exactly as R4RS requires
+//! (test.scm section 6 4).
 
 use gc::{Finalize, Trace};
 use std::collections::HashMap;
@@ -36,20 +41,20 @@ impl Interner {
         Interner::default()
     }
 
-    /// Intern `name` (lowercased), returning its canonical [`Symbol`].
+    /// Intern `name` verbatim (case-sensitive), returning its [`Symbol`].
+    /// Callers that want case folding (the reader) lowercase before calling.
     pub fn intern(&mut self, name: &str) -> Symbol {
-        let lowered = name.to_ascii_lowercase();
-        if let Some(&sym) = self.map.get(lowered.as_str()) {
+        if let Some(&sym) = self.map.get(name) {
             return sym;
         }
         let sym = Symbol(self.names.len() as u32);
-        let boxed: Box<str> = lowered.into_boxed_str();
+        let boxed: Box<str> = name.into();
         self.names.push(boxed.clone());
         self.map.insert(boxed, sym);
         sym
     }
 
-    /// Resolve a [`Symbol`] back to its canonical (lowercased) name.
+    /// Resolve a [`Symbol`] back to its name.
     pub fn resolve(&self, sym: Symbol) -> &str {
         &self.names[sym.0 as usize]
     }
@@ -68,11 +73,13 @@ mod tests {
     }
 
     #[test]
-    fn interning_is_case_folded() {
+    fn interning_is_case_sensitive() {
+        // Case folding is the reader's job, not the interner's; the interner
+        // preserves case so string->symbol can keep it.
         let mut it = Interner::new();
-        assert_eq!(it.intern("Foo"), it.intern("foo"));
+        assert_ne!(it.intern("Foo"), it.intern("foo"));
         let car = it.intern("CAR");
-        assert_eq!(it.resolve(car), "car");
+        assert_eq!(it.resolve(car), "CAR");
     }
 
     #[test]

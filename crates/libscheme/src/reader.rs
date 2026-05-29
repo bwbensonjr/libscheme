@@ -240,12 +240,12 @@ impl Reader {
         if is_float {
             match buf.parse::<f64>() {
                 Ok(d) => Ok(Value::Double(d)),
-                Err(_) => Ok(Value::Symbol(it.intern(&buf))),
+                Err(_) => Ok(Value::Symbol(it.intern(&buf.to_ascii_lowercase()))),
             }
         } else {
             match buf.parse::<i64>() {
                 Ok(n) => Ok(Value::Int(n)),
-                Err(_) => Ok(Value::Symbol(it.intern(&buf))),
+                Err(_) => Ok(Value::Symbol(it.intern(&buf.to_ascii_lowercase()))),
             }
         }
     }
@@ -274,7 +274,9 @@ impl Reader {
             s.push(c);
             self.getc();
         }
-        Ok(Value::Symbol(it.intern(&s)))
+        // Case-fold identifiers here (the reader is where C downcases). The
+        // interner itself is case-sensitive so string->symbol can preserve case.
+        Ok(Value::Symbol(it.intern(&s.to_ascii_lowercase())))
     }
 
     /// `#\` has been consumed. Reads a named character (`newline`, `space`, …)

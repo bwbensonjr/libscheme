@@ -21,7 +21,11 @@ pub fn init(it: &mut Interp) {
         let len = int_arg(&a[0], "make-string")?;
         let fill = match a.get(1) {
             Some(Value::Char(c)) => *c,
-            Some(_) => return Err(SchemeError::msg("make-string: second arg must be a character")),
+            Some(_) => {
+                return Err(SchemeError::msg(
+                    "make-string: second arg must be a character",
+                ))
+            }
             None => ' ',
         };
         Ok(Value::make_string(fill.to_string().repeat(len as usize)))
@@ -37,7 +41,9 @@ pub fn init(it: &mut Interp) {
         Ok(Value::make_string(s))
     });
     it.register("string-length", Arity::Exact(1), |_it, a| {
-        Ok(Value::Int(with_str(&a[0], "string-length")?.chars().count() as i64))
+        Ok(Value::Int(
+            with_str(&a[0], "string-length")?.chars().count() as i64,
+        ))
     });
     it.register("string-ref", Arity::Exact(2), |_it, a| {
         let s = with_str(&a[0], "string-ref")?;
@@ -51,7 +57,11 @@ pub fn init(it: &mut Interp) {
         let i = int_arg(&a[1], "string-set!")? as usize;
         let c = match &a[2] {
             Value::Char(c) => *c,
-            _ => return Err(SchemeError::msg("string-set!: third arg must be a character")),
+            _ => {
+                return Err(SchemeError::msg(
+                    "string-set!: third arg must be a character",
+                ))
+            }
         };
         match &a[0] {
             Value::Str(s) => {
@@ -68,16 +78,36 @@ pub fn init(it: &mut Interp) {
     });
 
     // comparisons.
-    it.register("string=?", Arity::Exact(2), |_it, a| str_cmp(a, "string=?", false, |o| o == Ordering::Equal));
-    it.register("string<?", Arity::Exact(2), |_it, a| str_cmp(a, "string<?", false, |o| o == Ordering::Less));
-    it.register("string>?", Arity::Exact(2), |_it, a| str_cmp(a, "string>?", false, |o| o == Ordering::Greater));
-    it.register("string<=?", Arity::Exact(2), |_it, a| str_cmp(a, "string<=?", false, |o| o != Ordering::Greater));
-    it.register("string>=?", Arity::Exact(2), |_it, a| str_cmp(a, "string>=?", false, |o| o != Ordering::Less));
-    it.register("string-ci=?", Arity::Exact(2), |_it, a| str_cmp(a, "string-ci=?", true, |o| o == Ordering::Equal));
-    it.register("string-ci<?", Arity::Exact(2), |_it, a| str_cmp(a, "string-ci<?", true, |o| o == Ordering::Less));
-    it.register("string-ci>?", Arity::Exact(2), |_it, a| str_cmp(a, "string-ci>?", true, |o| o == Ordering::Greater));
-    it.register("string-ci<=?", Arity::Exact(2), |_it, a| str_cmp(a, "string-ci<=?", true, |o| o != Ordering::Greater));
-    it.register("string-ci>=?", Arity::Exact(2), |_it, a| str_cmp(a, "string-ci>=?", true, |o| o != Ordering::Less));
+    it.register("string=?", Arity::Exact(2), |_it, a| {
+        str_cmp(a, "string=?", false, |o| o == Ordering::Equal)
+    });
+    it.register("string<?", Arity::Exact(2), |_it, a| {
+        str_cmp(a, "string<?", false, |o| o == Ordering::Less)
+    });
+    it.register("string>?", Arity::Exact(2), |_it, a| {
+        str_cmp(a, "string>?", false, |o| o == Ordering::Greater)
+    });
+    it.register("string<=?", Arity::Exact(2), |_it, a| {
+        str_cmp(a, "string<=?", false, |o| o != Ordering::Greater)
+    });
+    it.register("string>=?", Arity::Exact(2), |_it, a| {
+        str_cmp(a, "string>=?", false, |o| o != Ordering::Less)
+    });
+    it.register("string-ci=?", Arity::Exact(2), |_it, a| {
+        str_cmp(a, "string-ci=?", true, |o| o == Ordering::Equal)
+    });
+    it.register("string-ci<?", Arity::Exact(2), |_it, a| {
+        str_cmp(a, "string-ci<?", true, |o| o == Ordering::Less)
+    });
+    it.register("string-ci>?", Arity::Exact(2), |_it, a| {
+        str_cmp(a, "string-ci>?", true, |o| o == Ordering::Greater)
+    });
+    it.register("string-ci<=?", Arity::Exact(2), |_it, a| {
+        str_cmp(a, "string-ci<=?", true, |o| o != Ordering::Greater)
+    });
+    it.register("string-ci>=?", Arity::Exact(2), |_it, a| {
+        str_cmp(a, "string-ci>=?", true, |o| o != Ordering::Less)
+    });
 
     it.register("substring", Arity::Exact(3), |_it, a| {
         let s = with_str(&a[0], "substring")?;
@@ -87,7 +117,9 @@ pub fn init(it: &mut Interp) {
         if start > chars.len() || finish > chars.len() || start > finish {
             return Err(SchemeError::msg("substring: index out of bounds"));
         }
-        Ok(Value::make_string(chars[start..finish].iter().collect::<String>()))
+        Ok(Value::make_string(
+            chars[start..finish].iter().collect::<String>(),
+        ))
     });
     it.register("string-append", Arity::AtLeast(0), |_it, a| {
         let mut s = String::new();
@@ -97,7 +129,10 @@ pub fn init(it: &mut Interp) {
         Ok(Value::make_string(s))
     });
     it.register("string->list", Arity::Exact(1), |_it, a| {
-        let chars: Vec<Value> = with_str(&a[0], "string->list")?.chars().map(Value::Char).collect();
+        let chars: Vec<Value> = with_str(&a[0], "string->list")?
+            .chars()
+            .map(Value::Char)
+            .collect();
         Ok(Value::list(&chars))
     });
     it.register("list->string", Arity::Exact(1), |_it, a| {
@@ -108,7 +143,11 @@ pub fn init(it: &mut Interp) {
         for v in items {
             match v {
                 Value::Char(c) => s.push(c),
-                _ => return Err(SchemeError::msg("list->string: all elements must be characters")),
+                _ => {
+                    return Err(SchemeError::msg(
+                        "list->string: all elements must be characters",
+                    ))
+                }
             }
         }
         Ok(Value::make_string(s))
@@ -119,7 +158,11 @@ pub fn init(it: &mut Interp) {
     it.register("string-fill!", Arity::Exact(2), |_it, a| {
         let c = match &a[1] {
             Value::Char(c) => *c,
-            _ => return Err(SchemeError::msg("string-fill!: second arg must be a character")),
+            _ => {
+                return Err(SchemeError::msg(
+                    "string-fill!: second arg must be a character",
+                ))
+            }
         };
         match &a[0] {
             Value::Str(s) => {
@@ -168,7 +211,9 @@ mod tests {
         let s = Value::make_string("abc");
         let sym = it.intern("string-set!");
         let set = it.lookup_global(sym).unwrap();
-        let _ = it.apply(set, &[s.clone(), Value::Int(1), Value::Char('X')]).unwrap();
+        let _ = it
+            .apply(set, &[s.clone(), Value::Int(1), Value::Char('X')])
+            .unwrap();
         match &s {
             Value::Str(inner) => assert_eq!(*inner.borrow(), "aXc"),
             _ => unreachable!(),

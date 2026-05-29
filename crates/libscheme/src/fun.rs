@@ -125,7 +125,9 @@ fn collect_lists(args: &[Value], who: &str) -> SchemeResult<Vec<Vec<Value>>> {
 fn common_len(lists: &[Vec<Value>], who: &str) -> SchemeResult<usize> {
     let len = lists.first().map(|l| l.len()).unwrap_or(0);
     if lists.iter().any(|l| l.len() != len) {
-        return Err(SchemeError::msg(format!("{who}: all lists must have same size")));
+        return Err(SchemeError::msg(format!(
+            "{who}: all lists must have same size"
+        )));
     }
     Ok(len)
 }

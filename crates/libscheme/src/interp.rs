@@ -111,10 +111,7 @@ impl Interp {
     /// Register a special form (`scheme_make_syntax`).
     pub fn register_syntax(&mut self, name: &str, handler: SyntaxHandler) {
         let sym = self.intern(name);
-        let form = Value::Syntax(Gc::new(SyntaxForm {
-            name: sym,
-            handler,
-        }));
+        let form = Value::Syntax(Gc::new(SyntaxForm { name: sym, handler }));
         self.set_global(sym, form);
     }
 
