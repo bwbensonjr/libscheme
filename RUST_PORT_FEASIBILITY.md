@@ -170,3 +170,51 @@ libscheme::repl::run(&mut it, std::env::args());
 No bignums (fixnum `i64` + `f64` only), no `syntax-rules` (only `defmacro`), no module
 system, escape-only `call/cc` (no upward continuations). These are intentional parity
 constraints, not omissions.
+
+## Performance
+
+A profiling pass (criterion microbenchmarks + samply sampling profiles) drove three
+optimizations to the evaluator hot path. All are behavior-preserving — the full R4RS
+suite, `clippy -D warnings`, and `cargo fmt --check` stay green — and each was kept
+simple enough not to obscure the C correspondence.
+
+**Benchmarks.** `crates/libscheme/benches/eval_bench.rs` (criterion, `harness = false`)
+times four workloads with setup hoisted outside the measured loop so only eval/apply is
+timed: `fib 25` (non-tail recursion + arithmetic), `tak 18 12 6` (3-param binding
+stress), a `1_000_000`-iteration tail loop (trampoline + per-call framing, flat stack),
+and a `cons`/fold over a 1000-element list. Run `cargo bench`; save/compare baselines
+with `--save-baseline <name>` / `--baseline <name>`. Deep recursion and the full
+`test.scm` are profiled via samply on the REPL binary instead, which already runs eval on
+the 256 MiB worker thread (criterion's default-stack thread can't take them).
+
+**Profiling.** Build `cargo build --profile profiling -p scheme` (release speed + DWARF),
+then `samply record --save-only -o prof.json.gz -- ./target/profiling/scheme heavy.scm
+</dev/null`. The `[profile.release]` settings (`lto = "thin"`, `codegen-units = 1`) let
+the many tiny hot functions inline across module boundaries; `[profile.bench]` and the
+`profiling` profile carry debug symbols for symbolication.
+
+**What the profile showed and what was done** (in priority order; cumulative speedup vs.
+the pre-optimization baseline: fib −22%, tak −20%, tail-loop −22%, list −17%):
+
+1. **Operand evaluation no longer materializes an intermediate `Vec`** (the big win,
+   ~21% across the board). `eval_combination` (`eval.rs`) used to `list_to_vec()` the
+   unevaluated operands — an allocation plus a per-operand clone — before evaluating
+   them. `Value::list_to_vec` was 4.1% of self-time in the profile purely from this
+   per-call copy. It now walks the operand pair-chain directly into the `args` vector.
+2. **Closure shape is parsed once, at construction, not per call.** `Closure` stores the
+   parsed `param_names` / `rest_param` / `body_forms` (`value.rs`); `build_closure` /
+   `make_closure` compute and validate them once, so `closure_frame` is reduced to an
+   arity check and frame allocation. (Previously every call re-ran `parse_params` and
+   `list_to_vec` on the body.)
+3. **`define` / `lambda` are interned once and cached on `Interp`** (`sym_define` /
+   `sym_lambda`), eliminating two HashMap lookups per body evaluation in the
+   internal-define scan of `eval_body_tail`.
+
+**Deliberately not pursued.** After these changes the remaining top self-time is
+`Value` clone/drop (~24%, `Gc` reference-count traffic), the arithmetic/list primitives
+themselves (the actual work), and GC marking — all intrinsic to a `Gc`-based tree-walker.
+Cutting the refcount traffic would mean compile-time lexical addressing (de Bruijn
+indices) or a borrowing-based evaluator, which would obscure the simple tree-walker design
+and the C correspondence; it is intentionally out of scope. The internal-define scan never
+appeared in the profile, and `Env::lookup` (4.4%) has no simple structural win — its
+clone-on-hit is unavoidable given the return type and the lexical chain is shallow.

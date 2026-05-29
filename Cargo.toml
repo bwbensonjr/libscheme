@@ -11,3 +11,22 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/bwbensonjr/libscheme"
+
+# The interpreter is a tree-walker full of tiny hot functions (eval_step,
+# Env::lookup, Gc::clone); thin LTO + a single codegen-unit let them inline
+# across module boundaries. Default unwind is kept on purpose — the REPL joins
+# the eval worker thread (repl.rs) and relies on catching its panic.
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+
+# Criterion bench binaries carry DWARF so samply can attribute samples.
+[profile.bench]
+debug = true
+
+# Release speed + debug symbols for sampling profilers (samply), without
+# slowing the real release build.
+[profile.profiling]
+inherits = "release"
+debug = true

@@ -22,6 +22,11 @@ pub struct Interp {
     /// The single global binding table (keyed by interned [`Symbol`]). In C this
     /// was a string-keyed hash copied into every frame; here it lives once.
     globals: HashMap<Symbol, Value>,
+    /// Interned `define`/`lambda`, cached so the evaluator's hot path
+    /// (internal-define handling in `eval_body_tail`) need not re-intern them on
+    /// every body evaluation.
+    sym_define: Symbol,
+    sym_lambda: Symbol,
     next_type_id: u64,
     next_cont_id: u64,
     /// The current input/output ports (`cur_in_port`/`cur_out_port`,
@@ -34,14 +39,29 @@ impl Interp {
     /// A bare interpreter with no bindings. Use [`Interp::basic_env`] for the
     /// standard environment.
     pub fn new() -> Self {
+        let mut interner = Interner::new();
+        let sym_define = interner.intern("define");
+        let sym_lambda = interner.intern("lambda");
         Interp {
-            interner: Interner::new(),
+            interner,
             globals: HashMap::new(),
+            sym_define,
+            sym_lambda,
             next_type_id: 0,
             next_cont_id: 0,
             cur_in: None,
             cur_out: None,
         }
+    }
+
+    /// The interned `define` symbol (cached at construction).
+    pub(crate) fn sym_define(&self) -> Symbol {
+        self.sym_define
+    }
+
+    /// The interned `lambda` symbol (cached at construction).
+    pub(crate) fn sym_lambda(&self) -> Symbol {
+        self.sym_lambda
     }
 
     /// The current input port (`current-input-port`).

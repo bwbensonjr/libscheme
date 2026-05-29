@@ -11,10 +11,10 @@
 
 use crate::env::Env;
 use crate::error::{SchemeError, SchemeResult};
-use crate::eval::{make_closure, Tail};
+use crate::eval::{build_closure, make_closure, Tail};
 use crate::interner::Symbol;
 use crate::interp::Interp;
-use crate::value::{Closure, Promise, Value};
+use crate::value::{Promise, Value};
 use gc::{Gc, GcCell};
 
 /// `scheme_init_syntax`: register the syntax/macro type objects and all forms.
@@ -80,7 +80,7 @@ fn lambda(_it: &mut Interp, form: &Value, env: &Gc<Env>) -> SchemeResult<Tail> {
     if body.is_null() {
         return Err(SchemeError::msg("lambda: empty body"));
     }
-    Ok(Tail::done(make_closure(env.clone(), params, body, None)))
+    Ok(Tail::done(make_closure(env.clone(), params, body, None)?))
 }
 
 fn define(it: &mut Interp, form: &Value, env: &Gc<Env>) -> SchemeResult<Tail> {
@@ -105,7 +105,7 @@ fn define(it: &mut Interp, form: &Value, env: &Gc<Env>) -> SchemeResult<Tail> {
                 (name, b.cdr.clone())
             };
             let body = Value::list(&parts[2..]);
-            let closure = make_closure(env.clone(), lambda_args, body, Some(name));
+            let closure = make_closure(env.clone(), lambda_args, body, Some(name))?;
             bind_define(it, env, name, closure);
             Ok(Tail::done(Value::Symbol(name)))
         }
@@ -297,7 +297,7 @@ fn named_let(it: &mut Interp, parts: &[Value], env: &Gc<Env>) -> SchemeResult<Ta
     // Frame holding the loop binding (placeholder until the closure is built).
     let loop_frame = Env::new(vec![name], vec![Value::Bool(false)], Some(env.clone()));
     let params = Value::list(&names.iter().map(|s| Value::Symbol(*s)).collect::<Vec<_>>());
-    let proc = make_closure(loop_frame.clone(), params, body, Some(name));
+    let proc = make_closure(loop_frame.clone(), params, body, Some(name))?;
     loop_frame.set(name, proc.clone());
 
     // Evaluate the inits in the OUTER env and apply the loop procedure.
@@ -420,12 +420,12 @@ fn delay(_it: &mut Interp, form: &Value, env: &Gc<Env>) -> SchemeResult<Tail> {
         return Err(SchemeError::msg("delay: bad form"));
     }
     // body = (expr); params = () ; so applying it evaluates expr.
-    let thunk = Gc::new(Closure {
-        env: env.clone(),
-        params: Value::Null,
-        body: Value::list(&[parts[1].clone()]),
-        name: None,
-    });
+    let thunk = build_closure(
+        env.clone(),
+        Value::Null,
+        Value::list(&[parts[1].clone()]),
+        None,
+    )?;
     Ok(Tail::done(Value::Promise(Gc::new(GcCell::new(Promise {
         forced: false,
         value: None,
@@ -538,12 +538,7 @@ fn defmacro(it: &mut Interp, form: &Value, env: &Gc<Env>) -> SchemeResult<Tail> 
     };
     let params = parts[2].clone();
     let body = Value::list(&parts[3..]);
-    let closure = Gc::new(Closure {
-        env: env.clone(),
-        params,
-        body,
-        name: Some(name),
-    });
+    let closure = build_closure(env.clone(), params, body, Some(name))?;
     let macro_val = Value::Macro(closure);
     bind_define(it, env, name, macro_val.clone());
     Ok(Tail::done(macro_val))

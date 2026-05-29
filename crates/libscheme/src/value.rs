@@ -65,12 +65,18 @@ pub struct Pair {
 }
 
 /// A user closure (`scheme_closure_type`, scheme_fun.c:71): its defining
-/// environment plus the (unevaluated) parameter list and body.
+/// environment plus the parameter shape and body.
+///
+/// The parameter list and body are immutable for the life of the closure, so
+/// their parsed forms — the fixed parameter names, an optional rest parameter,
+/// and the body split into a `Vec` of forms — are computed once at construction
+/// (`make_closure`) rather than re-derived on every call.
 #[derive(Trace, Finalize)]
 pub struct Closure {
     pub env: Gc<Env>,
-    pub params: Value,
-    pub body: Value,
+    pub param_names: Vec<Symbol>,
+    pub rest_param: Option<Symbol>,
+    pub body_forms: Vec<Value>,
     pub name: Option<Symbol>,
 }
 
