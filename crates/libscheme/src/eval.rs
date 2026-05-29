@@ -259,7 +259,7 @@ impl Interp {
             // letrec frame: pre-bind names to a placeholder, then assign.
             let placeholders = vec![Value::Bool(false); def_names.len()];
             let frame = Env::new(def_names.clone(), placeholders, Some(env));
-            for (name, expr) in def_names.iter().zip(def_exprs.into_iter()) {
+            for (name, expr) in def_names.iter().zip(def_exprs) {
                 let v = self.eval(expr, frame.clone())?;
                 frame.set(*name, v);
             }
