@@ -18,10 +18,13 @@
 
 pub mod env;
 pub mod error;
+pub mod eval;
+pub mod fun;
 pub mod interner;
 pub mod interp;
 pub mod printer;
 pub mod reader;
+pub mod syntax;
 pub mod value;
 
 pub use error::{SchemeError, SchemeResult};

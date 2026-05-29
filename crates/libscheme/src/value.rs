@@ -192,7 +192,11 @@ impl Arity {
 /// The handler for a special form (`scheme_syntax_type`). Receives the whole
 /// form (including the keyword) and the current environment, like the C
 /// `Scheme_Object* fn(Scheme_Object* form, Scheme_Env* env)` (scheme.h).
-pub type SyntaxHandler = fn(&mut Interp, &Value, &Gc<Env>) -> SchemeResult;
+///
+/// Returns a [`crate::eval::Tail`] rather than a bare value so that forms with a
+/// tail position (`if`, `begin`, `cond`, …) can hand their final expression back
+/// to the eval loop to be evaluated *in place*, giving proper tail calls.
+pub type SyntaxHandler = fn(&mut Interp, &Value, &Gc<Env>) -> SchemeResult<crate::eval::Tail>;
 
 /// A special form (`scheme_syntax_type`). Populated in Phase 3.
 #[derive(Trace, Finalize)]
@@ -230,6 +234,48 @@ impl Value {
             acc = Value::cons(v.clone(), acc);
         }
         acc
+    }
+
+    /// `car`, if this is a pair.
+    pub fn car(&self) -> Option<Value> {
+        match self {
+            Value::Pair(p) => Some(p.borrow().car.clone()),
+            _ => None,
+        }
+    }
+
+    /// `cdr`, if this is a pair.
+    pub fn cdr(&self) -> Option<Value> {
+        match self {
+            Value::Pair(p) => Some(p.borrow().cdr.clone()),
+            _ => None,
+        }
+    }
+
+    /// Collect a proper list into a `Vec`. Returns `None` if this value is not a
+    /// proper list (i.e. it ends in a non-null, non-pair tail).
+    pub fn list_to_vec(&self) -> Option<Vec<Value>> {
+        let mut out = Vec::new();
+        let mut cur = self.clone();
+        loop {
+            match &cur {
+                Value::Null => return Some(out),
+                Value::Pair(p) => {
+                    let (car, cdr) = {
+                        let b = p.borrow();
+                        (b.car.clone(), b.cdr.clone())
+                    };
+                    out.push(car);
+                    cur = cdr;
+                }
+                _ => return None,
+            }
+        }
+    }
+
+    /// Length of a proper list, or `None` if improper.
+    pub fn list_len(&self) -> Option<usize> {
+        self.list_to_vec().map(|v| v.len())
     }
 
     // --- predicates mirroring the SCHEME_*P macros ---

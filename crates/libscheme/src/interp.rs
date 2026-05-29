@@ -122,15 +122,15 @@ impl Interp {
     /// this list — never the beginning — because later inits depend on the type
     /// objects and primitives earlier ones register.
     pub fn basic_env() -> Interp {
-        #[allow(unused_mut)]
         let mut it = Interp::new();
-        // Phase 0: no subsystems registered yet. Subsequent phases append here,
-        // e.g.:
-        //   type_::init(&mut it);   // must precede prims that name types
-        //   fun::init(&mut it);
-        //   list::init(&mut it);
-        //   number::init(&mut it);
-        //   ...
+        // Bootstrap order mirrors scheme_basic_env (scheme_env.c:43). Type
+        // registration is folded into make_type, so there is no separate
+        // type init. Append new subsystem inits to the END of this list as
+        // they land in later phases (list, number, port, string, vector,
+        // char, bool, promise, struct).
+        crate::fun::init(&mut it);
+        crate::syntax::init(&mut it);
+        crate::eval::init(&mut it);
         it
     }
 }
