@@ -1,0 +1,19 @@
+[package]
+name = "posix"
+description = "POSIX bindings demonstrating libscheme's extension API (Rust port of src/posix)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "posix"
+path = "src/lib.rs"
+
+[[bin]]
+name = "posix_scheme"
+path = "src/bin/posix_scheme.rs"
+
+[dependencies]
+libscheme = { path = "../libscheme" }
+libc = "0.2"

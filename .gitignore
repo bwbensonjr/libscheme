@@ -2,3 +2,12 @@
 *.o
 *.a
 .DS_Store
+
+# Rust
+/target
+
+# Temp files written by the R4RS test suite (test.scm), in whichever
+# directory it is run from.
+tmp1
+tmp2
+tmp3

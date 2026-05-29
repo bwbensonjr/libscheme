@@ -1,0 +1,10 @@
+[package]
+name = "libscheme"
+description = "A Scheme interpreter packaged as an extensible library (Rust port of libscheme)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+gc = { version = "0.5", features = ["derive"] }
