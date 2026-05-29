@@ -2,8 +2,8 @@
 resolver = "2"
 members = [
     "crates/libscheme",
-    # "crates/scheme",  # added in Phase 6
-    # "crates/posix",   # added in Phase 6
+    "crates/scheme",
+    "crates/posix",
 ]
 
 [workspace.package]

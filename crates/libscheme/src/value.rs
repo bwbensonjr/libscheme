@@ -295,6 +295,35 @@ impl Value {
         Value::OutputPort(Gc::new(GcCell::new(OutputPort { sink, open: true })))
     }
 
+    /// An instance of a nominal [`TypeObject`] (from [`Interp::make_type`]) with
+    /// the given field values. This is the public path for extensions (e.g. the
+    /// posix `<stat>` type) to build typed records without naming `Gc` directly.
+    pub fn make_struct(ty: Gc<TypeObject>, fields: Vec<Value>) -> Value {
+        Value::Struct(Gc::new(GcCell::new(StructInstance { ty, fields })))
+    }
+
+    /// If this is a struct instance of `ty`, return its field at `slot`.
+    /// Extensions use this to implement typed accessors. `None` on type mismatch
+    /// or out-of-range slot.
+    pub fn struct_field(&self, ty: &Gc<TypeObject>, slot: usize) -> Option<Value> {
+        match self {
+            Value::Struct(s) => {
+                let s = s.borrow();
+                if gc_ptr_eq(&s.ty, ty) {
+                    s.fields.get(slot).cloned()
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// True if this is a struct instance of the nominal type `ty`.
+    pub fn is_struct_of(&self, ty: &Gc<TypeObject>) -> bool {
+        matches!(self, Value::Struct(s) if gc_ptr_eq(&s.borrow().ty, ty))
+    }
+
     /// Build a proper list from a slice (the `()`-terminated chain).
     pub fn list(items: &[Value]) -> Value {
         let mut acc = Value::Null;

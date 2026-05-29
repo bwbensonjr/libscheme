@@ -30,6 +30,7 @@ pub mod port;
 pub mod printer;
 pub mod promise;
 pub mod reader;
+pub mod repl;
 pub mod string;
 pub mod structs;
 pub mod symbol;
@@ -42,7 +43,12 @@ pub use interner::Symbol;
 pub use interp::Interp;
 pub use printer::{display_to_string, write_to_string};
 pub use reader::Reader;
-pub use value::Value;
+pub use value::{Arity, TypeObject, Value};
+
+// Re-export the GC handle so extension crates can name `Gc<TypeObject>` (the
+// type minted by `Interp::make_type`) without depending on the `gc` crate
+// directly — part of the public extension API surface.
+pub use gc::Gc;
 
 #[cfg(test)]
 mod gc_tests {
