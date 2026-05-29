@@ -15,6 +15,14 @@
 //! ([`crate::error`]): a primitive signalling an error returns `Err(User..)`,
 //! and invoking a continuation returns `Err(ContinuationInvoked..)` that unwinds
 //! until the matching `call/cc` frame catches it.
+//!
+//! Hot-path notes (see the Performance section of `RUST_PORT_FEASIBILITY.md`):
+//! `eval_combination` walks the operand pair-chain straight into the `args`
+//! vector rather than first collecting the unevaluated operands with
+//! `list_to_vec` — that intermediate allocation + per-operand clone was the
+//! single largest avoidable cost. Relatedly, [`Closure`] caches its parsed
+//! parameter names and body forms (computed once in [`build_closure`]), so
+//! `closure_frame` is just an arity check and a frame allocation.
 
 use crate::env::Env;
 use crate::error::{SchemeError, SchemeResult};
@@ -113,13 +121,25 @@ impl Interp {
                 })
             }
             // Ordinary application: evaluate operands left-to-right, then apply.
+            // Walk the operand pair-chain directly rather than materializing an
+            // intermediate Vec of unevaluated operands (this combination runs on
+            // every call, so the extra allocation + per-operand clone showed up
+            // in profiles).
             _ => {
-                let operand_exprs = rands.list_to_vec().ok_or_else(|| {
-                    SchemeError::msg("eval: combination operands must be a proper list")
-                })?;
-                let mut args = Vec::with_capacity(operand_exprs.len());
-                for oe in operand_exprs {
-                    args.push(self.eval(oe, env.clone())?);
+                let mut args = Vec::new();
+                let mut cur = rands;
+                while let Value::Pair(p) = &cur {
+                    let (car, cdr) = {
+                        let b = p.borrow();
+                        (b.car.clone(), b.cdr.clone())
+                    };
+                    args.push(self.eval(car, env.clone())?);
+                    cur = cdr;
+                }
+                if !matches!(cur, Value::Null) {
+                    return Err(SchemeError::msg(
+                        "eval: combination operands must be a proper list",
+                    ));
                 }
                 self.apply_tail(rator, args)
             }
@@ -186,44 +206,34 @@ impl Interp {
     }
 
     /// Bind a closure's parameters to `args`, producing the call frame and the
-    /// (internal-define-rewritten) body. Mirrors the parameter binding and
-    /// internal-define handling of `scheme_apply` (scheme_fun.c:106-183).
+    /// body forms. The parameter shape and body were parsed once at
+    /// construction (`make_closure`); this is only the per-call arity check and
+    /// frame allocation (the binding half of `scheme_apply`, scheme_fun.c:106).
     fn closure_frame(
         &mut self,
         c: Gc<Closure>,
         args: &[Value],
     ) -> SchemeResult<(Gc<Env>, Vec<Value>)> {
-        let params = c.params.clone();
-        let (mut names, rest) = parse_params(&params)?;
-
-        // Arity check, accounting for a rest parameter.
-        let body = c
-            .body
-            .list_to_vec()
-            .ok_or_else(|| SchemeError::msg("closure body must be a proper list"))?;
-        if body.is_empty() {
-            return Err(SchemeError::msg("closure body has no forms"));
-        }
-
-        if let Some(rest_sym) = rest {
-            if args.len() < names.len() {
+        let fixed = c.param_names.len();
+        if let Some(rest_sym) = c.rest_param {
+            if args.len() < fixed {
                 return Err(SchemeError::msg("too few arguments to procedure"));
             }
-            let mut vals: Vec<Value> = args[..names.len()].to_vec();
-            let rest_list = Value::list(&args[names.len()..]);
+            let mut names = c.param_names.clone();
+            let mut vals: Vec<Value> = args[..fixed].to_vec();
             names.push(rest_sym);
-            vals.push(rest_list);
+            vals.push(Value::list(&args[fixed..]));
             let frame = Env::new(names, vals, Some(c.env.clone()));
-            Ok((frame, body))
+            Ok((frame, c.body_forms.clone()))
         } else {
-            if args.len() < names.len() {
+            if args.len() < fixed {
                 return Err(SchemeError::msg("too few arguments to procedure"));
             }
-            if args.len() > names.len() {
+            if args.len() > fixed {
                 return Err(SchemeError::msg("too many arguments to procedure"));
             }
-            let frame = Env::new(names, args.to_vec(), Some(c.env.clone()));
-            Ok((frame, body))
+            let frame = Env::new(c.param_names.clone(), args.to_vec(), Some(c.env.clone()));
+            Ok((frame, c.body_forms.clone()))
         }
     }
 
@@ -236,8 +246,8 @@ impl Interp {
     /// (scheme_syntax.c:316), rather than re-implementing it.
     pub(crate) fn eval_body_tail(&mut self, forms: Vec<Value>, env: Gc<Env>) -> SchemeResult<Tail> {
         // Split leading internal defines.
-        let define_sym = self.intern("define");
-        let lambda_sym = self.intern("lambda");
+        let define_sym = self.sym_define();
+        let lambda_sym = self.sym_lambda();
         let mut idx = 0;
         let mut def_names: Vec<crate::interner::Symbol> = Vec::new();
         let mut def_exprs: Vec<Value> = Vec::new();
@@ -358,18 +368,41 @@ pub fn init(it: &mut Interp) {
     });
 }
 
-/// Construct a closure value from a parameter list, body forms, and a defining
-/// environment. Shared by `lambda` and `define`'s procedure form.
+/// Build a [`Closure`] from a parameter list, body forms, and a defining
+/// environment, parsing and validating both once. Returns the `Gc<Closure>` so
+/// callers can wrap it as a procedure ([`make_closure`]), a `delay` thunk, or a
+/// `defmacro` transformer (`Value::Macro`).
+pub fn build_closure(
+    env: Gc<Env>,
+    params: Value,
+    body: Value,
+    name: Option<crate::interner::Symbol>,
+) -> SchemeResult<Gc<Closure>> {
+    let (param_names, rest_param) = parse_params(&params)?;
+    let body_forms = body
+        .list_to_vec()
+        .ok_or_else(|| SchemeError::msg("closure body must be a proper list"))?;
+    if body_forms.is_empty() {
+        return Err(SchemeError::msg("closure body has no forms"));
+    }
+    Ok(Gc::new(Closure {
+        env,
+        param_names,
+        rest_param,
+        body_forms,
+        name,
+    }))
+}
+
+/// Construct a closure *value* from a parameter list, body forms, and a defining
+/// environment. Shared by `lambda` and `define`'s procedure form. The parameter
+/// list and body are parsed and validated here, once, so that applying the
+/// closure later costs only an arity check and a frame allocation.
 pub fn make_closure(
     env: Gc<Env>,
     params: Value,
     body: Value,
     name: Option<crate::interner::Symbol>,
-) -> Value {
-    Value::Closure(Gc::new(Closure {
-        env,
-        params,
-        body,
-        name,
-    }))
+) -> SchemeResult {
+    Ok(Value::Closure(build_closure(env, params, body, name)?))
 }

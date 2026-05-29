@@ -64,6 +64,7 @@ A from-scratch re-implementation in idiomatic, safe Rust lives in `crates/` (a c
 
 ```sh
 cargo test                              # unit + integration + the R4RS golden suite
+cargo bench                             # criterion eval microbenchmarks
 cargo run -p scheme                     # the REPL (port of src/main.c)
 cargo run -p posix --bin posix_scheme   # REPL + POSIX extensions (port of src/posix/)
 ```
@@ -72,6 +73,7 @@ cargo run -p posix --bin posix_scheme   # REPL + POSIX extensions (port of src/p
 - **C → Rust mapping:** `Scheme_Object` union → `enum Value` (the discriminant *is* the type); runtime nominal types (`define-struct`, posix `<stat>`) carry a `Gc<TypeObject>` compared by pointer identity. `setjmp`/`longjmp` errors and escape `call/cc` → a `Result<Value, SchemeError>` channel (`SchemeError::ContinuationInvoked` is caught by the matching `call/cc` frame). Boehm GC → the `gc` crate (`Gc<GcCell<T>>`); the evaluator **trampolines** tail calls (the C tree-walker has no TCO).
 - **Load-bearing invariants (easy to break unknowingly):** each `scheme_*.c` maps to a module of the same name, and `Interp::basic_env` calls each module's `init` in the *same bootstrap order* as `scheme_basic_env` — append new inits to the END. Symbol interning is **case-sensitive**; case folding happens in the *reader* (so `string->symbol` preserves case, per R4RS §6.4). `Interp::register` / `register_value` / `register_syntax` + `make_type` are the public extension API — built-ins and the posix crate use the identical path.
 - **Acceptance test:** `crates/libscheme/tests/r4rs_suite.rs` drives the original `src/test.scm` (copied to `crates/libscheme/tests/fixtures/`). The core suite plus `(test-sc4)` and `(test-inexact)` must pass; `(test-cont)` is *expected* to fail gracefully (escape-only continuations, like the C version — surfaced as an error, never UB). CI gates `cargo test`, `clippy -D warnings`, and `cargo fmt --check`.
+- **Performance:** `crates/libscheme/benches/eval_bench.rs` (criterion) times the eval hot path; root `Cargo.toml` has a `profiling` profile (release + debug symbols) for samply. A profiling pass already removed the main hot-path overheads (intermediate operand `Vec`, per-call closure re-parsing, repeated interning); the remaining cost is intrinsic `Gc` refcount traffic, and reducing it (lexical addressing / borrowing eval) is intentionally out of scope as it would obscure the simple tree-walker. Optimizations must not drastically complicate the code. See the **Performance** section of `RUST_PORT_FEASIBILITY.md`.
 - For the full design rationale and phase-by-phase mapping, see `RUST_PORT_FEASIBILITY.md`.
 
 ## Code style
