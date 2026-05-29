@@ -161,10 +161,7 @@ impl Interp {
                     value: args.into_iter().next().unwrap(),
                 })
             }
-            Value::StructProc(_) => {
-                // Fleshed out in Phase 5.
-                Err(SchemeError::msg("apply: struct procedures land in Phase 5"))
-            }
+            Value::StructProc(sp) => Ok(Tail::Done(self.apply_struct_proc(sp, &args)?)),
             _ => Err(SchemeError::msg("apply: bad procedure")),
         }
     }

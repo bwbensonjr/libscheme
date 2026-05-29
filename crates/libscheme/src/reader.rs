@@ -29,6 +29,16 @@ impl Reader {
         }
     }
 
+    /// Build a reader over an explicit char buffer, starting at `start`.
+    pub fn from_chars(chars: Vec<char>, start: usize) -> Self {
+        Reader { chars, pos: start }
+    }
+
+    /// Current cursor position — used to advance a port after reading one datum.
+    pub fn pos(&self) -> usize {
+        self.pos
+    }
+
     fn getc(&mut self) -> Option<char> {
         let c = self.chars.get(self.pos).copied();
         if c.is_some() {

@@ -122,30 +122,84 @@ pub enum StructProcKind {
     Mutator(usize),
 }
 
-// --- ports (fleshed out in Phase 5) ---
+// --- ports (scheme_port.c) ---
 
-/// An input port (`scheme_input_port_type`, scheme_port.c).
+/// An input port (`scheme_input_port_type`). Backed by either an in-memory
+/// string (the `scheme_string_input_port_type`) or a file's contents read up
+/// front. Both expose the `getc`/`ungetc`/`peek` interface the reader needs;
+/// modeling files as a pre-read char buffer keeps the port `'static` and avoids
+/// threading a live `File` handle through the GC.
 #[derive(Trace, Finalize)]
 pub struct InputPort {
     #[unsafe_ignore_trace]
-    pub inner: PortInner,
+    pub chars: Vec<char>,
+    pub index: usize,
     pub open: bool,
 }
 
-/// An output port (`scheme_output_port_type`, scheme_port.c).
+impl InputPort {
+    /// Read the next character, advancing the cursor. `None` at end of input.
+    pub fn getc(&mut self) -> Option<char> {
+        let c = self.chars.get(self.index).copied();
+        if c.is_some() {
+            self.index += 1;
+        }
+        c
+    }
+    /// Put the last character back (one position of lookahead), like C's ungetc.
+    pub fn ungetc(&mut self) {
+        if self.index > 0 {
+            self.index -= 1;
+        }
+    }
+    /// Peek at the next character without consuming it.
+    pub fn peek(&self) -> Option<char> {
+        self.chars.get(self.index).copied()
+    }
+    /// `char-ready?`: more input is buffered.
+    pub fn char_ready(&self) -> bool {
+        self.index < self.chars.len()
+    }
+}
+
+/// An output port (`scheme_output_port_type`). Either a real file/stdout/stderr
+/// sink or an in-memory accumulator (for the string-port extensions).
 #[derive(Trace, Finalize)]
 pub struct OutputPort {
     #[unsafe_ignore_trace]
-    pub inner: PortInner,
+    pub sink: OutputSink,
     pub open: bool,
 }
 
-/// Placeholder for the concrete byte source/sink behind a port. Real file and
-/// string variants land in Phase 5.
-#[derive(Debug, Default)]
-pub enum PortInner {
-    #[default]
-    Stub,
+/// Where an output port's bytes go.
+pub enum OutputSink {
+    Stdout,
+    Stderr,
+    File(std::fs::File),
+    /// In-memory accumulator (string output port).
+    Buffer(String),
+}
+
+impl OutputSink {
+    /// Append `s` to the sink (the C `write_string_fun`).
+    pub fn write_str(&mut self, s: &str) -> std::io::Result<()> {
+        use std::io::Write;
+        match self {
+            OutputSink::Stdout => {
+                print!("{s}");
+                std::io::stdout().flush()
+            }
+            OutputSink::Stderr => {
+                eprint!("{s}");
+                std::io::stderr().flush()
+            }
+            OutputSink::File(f) => f.write_all(s.as_bytes()),
+            OutputSink::Buffer(buf) => {
+                buf.push_str(s);
+                Ok(())
+            }
+        }
+    }
 }
 
 // --- primitives & syntax: the extension API surface ---
@@ -225,6 +279,20 @@ impl Value {
 
     pub fn make_vector(items: Vec<Value>) -> Value {
         Value::Vector(Gc::new(GcCell::new(items)))
+    }
+
+    /// An input port over the given characters (a string or file's contents).
+    pub fn make_input_port(chars: Vec<char>) -> Value {
+        Value::InputPort(Gc::new(GcCell::new(InputPort {
+            chars,
+            index: 0,
+            open: true,
+        })))
+    }
+
+    /// An output port over the given sink.
+    pub fn make_output_port(sink: OutputSink) -> Value {
+        Value::OutputPort(Gc::new(GcCell::new(OutputPort { sink, open: true })))
     }
 
     /// Build a proper list from a slice (the `()`-terminated chain).

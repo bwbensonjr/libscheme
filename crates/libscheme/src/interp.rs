@@ -24,6 +24,10 @@ pub struct Interp {
     globals: HashMap<Symbol, Value>,
     next_type_id: u64,
     next_cont_id: u64,
+    /// The current input/output ports (`cur_in_port`/`cur_out_port`,
+    /// scheme_port.c:48). Set up by the port subsystem; `None` until then.
+    cur_in: Option<Value>,
+    cur_out: Option<Value>,
 }
 
 impl Interp {
@@ -35,7 +39,24 @@ impl Interp {
             globals: HashMap::new(),
             next_type_id: 0,
             next_cont_id: 0,
+            cur_in: None,
+            cur_out: None,
         }
+    }
+
+    /// The current input port (`current-input-port`).
+    pub fn cur_in(&self) -> Option<Value> {
+        self.cur_in.clone()
+    }
+    /// The current output port (`current-output-port`).
+    pub fn cur_out(&self) -> Option<Value> {
+        self.cur_out.clone()
+    }
+    pub fn set_cur_in(&mut self, port: Value) {
+        self.cur_in = Some(port);
+    }
+    pub fn set_cur_out(&mut self, port: Value) {
+        self.cur_out = Some(port);
     }
 
     // --- interning (delegates to the owned Interner) ---
@@ -125,18 +146,20 @@ impl Interp {
         let mut it = Interp::new();
         // Bootstrap order mirrors scheme_basic_env (scheme_env.c:43). Type
         // registration is folded into make_type, so there is no separate
-        // type init. Append new subsystem inits to the END of this list as
-        // they land in later phases (port, promise, struct).
+        // type init.
         crate::fun::init(&mut it);
         crate::symbol::init(&mut it);
         crate::list::init(&mut it);
         crate::number::init(&mut it);
+        crate::port::init(&mut it);
         crate::string::init(&mut it);
         crate::vector::init(&mut it);
         crate::char::init(&mut it);
         crate::boolean::init(&mut it);
         crate::syntax::init(&mut it);
         crate::eval::init(&mut it);
+        crate::promise::init(&mut it);
+        crate::structs::init(&mut it);
         it
     }
 }
