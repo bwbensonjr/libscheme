@@ -229,7 +229,11 @@ impl Interp {
     /// Evaluate a body (a list of forms) in `env`, returning its last form as a
     /// [`Tail`] so it trampolines. Internal defines at the head are hoisted into
     /// a fresh frame extending `env` (the letrec semantics of scheme_fun.c:174).
-    fn eval_body_tail(&mut self, forms: Vec<Value>, env: Gc<Env>) -> SchemeResult<Tail> {
+    ///
+    /// Exposed to the crate so the `let`/`let*`/`letrec`/`do` special forms can
+    /// reuse the exact same internal-define handling for their bodies
+    /// (scheme_syntax.c:316), rather than re-implementing it.
+    pub(crate) fn eval_body_tail(&mut self, forms: Vec<Value>, env: Gc<Env>) -> SchemeResult<Tail> {
         // Split leading internal defines.
         let define_sym = self.intern("define");
         let lambda_sym = self.intern("lambda");
