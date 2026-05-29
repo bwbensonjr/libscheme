@@ -126,9 +126,15 @@ impl Interp {
         // Bootstrap order mirrors scheme_basic_env (scheme_env.c:43). Type
         // registration is folded into make_type, so there is no separate
         // type init. Append new subsystem inits to the END of this list as
-        // they land in later phases (list, number, port, string, vector,
-        // char, bool, promise, struct).
+        // they land in later phases (port, promise, struct).
         crate::fun::init(&mut it);
+        crate::symbol::init(&mut it);
+        crate::list::init(&mut it);
+        crate::number::init(&mut it);
+        crate::string::init(&mut it);
+        crate::vector::init(&mut it);
+        crate::char::init(&mut it);
+        crate::boolean::init(&mut it);
         crate::syntax::init(&mut it);
         crate::eval::init(&mut it);
         it

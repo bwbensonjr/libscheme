@@ -16,16 +16,23 @@
 // correct; silence the noise until the dependency is updated.
 #![allow(non_local_definitions)]
 
+pub mod boolean;
+pub mod char;
 pub mod env;
 pub mod error;
 pub mod eval;
 pub mod fun;
 pub mod interner;
 pub mod interp;
+pub mod list;
+pub mod number;
 pub mod printer;
 pub mod reader;
+pub mod string;
+pub mod symbol;
 pub mod syntax;
 pub mod value;
+pub mod vector;
 
 pub use error::{SchemeError, SchemeResult};
 pub use interner::Symbol;

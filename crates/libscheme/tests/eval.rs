@@ -1,19 +1,17 @@
 //! Phase 2 acceptance: evaluate real Scheme programs end-to-end through the
-//! core evaluator with only the irreducible special forms (`quote`, `if`,
-//! `lambda`, `define`, `set!`, `begin`) plus the `fun.rs` primitives. The typed
-//! primitives (`+`, `car`, …) land in Phase 4, so these tests register small
-//! helper primitives where arithmetic is needed.
+//! core evaluator with the irreducible special forms (`quote`, `if`, `lambda`,
+//! `define`, `set!`, `begin`), the `fun.rs` primitives, and (since Phase 4) the
+//! real number tower and list/predicate primitives from `basic_env`.
 
 use libscheme::env::Env;
 use libscheme::error::SchemeError;
-use libscheme::value::{Arity, Value};
+use libscheme::value::Value;
 use libscheme::{write_to_string, Interp, Reader};
 
-/// Evaluate every form in `src` against a `basic_env` augmented with a few
-/// arithmetic primitives, returning the `write` form of the final result.
+/// Evaluate every form in `src` against the standard `basic_env`, returning the
+/// `write` form of the final result.
 fn run(src: &str) -> String {
     let mut it = Interp::basic_env();
-    install_arith(&mut it);
     let mut r = Reader::new(src);
     let forms = r.read_all(&mut it).expect("read");
     let mut last = Value::Bool(false);
@@ -21,57 +19,6 @@ fn run(src: &str) -> String {
         last = it.eval(f, Env::root()).expect("eval");
     }
     write_to_string(&it, &last)
-}
-
-/// Minimal integer primitives so the eval tests can do arithmetic before the
-/// number subsystem (Phase 4) exists.
-fn install_arith(it: &mut Interp) {
-    it.register("+", Arity::AtLeast(0), |_it, args| {
-        let mut sum = 0i64;
-        for a in args {
-            match a {
-                Value::Int(n) => sum += n,
-                _ => return Err(SchemeError::msg("+: not an int")),
-            }
-        }
-        Ok(Value::Int(sum))
-    });
-    it.register("-", Arity::AtLeast(1), |_it, args| {
-        let mut acc = match &args[0] {
-            Value::Int(n) => *n,
-            _ => return Err(SchemeError::msg("-: not an int")),
-        };
-        if args.len() == 1 {
-            return Ok(Value::Int(-acc));
-        }
-        for a in &args[1..] {
-            match a {
-                Value::Int(n) => acc -= n,
-                _ => return Err(SchemeError::msg("-: not an int")),
-            }
-        }
-        Ok(Value::Int(acc))
-    });
-    it.register("*", Arity::AtLeast(0), |_it, args| {
-        let mut p = 1i64;
-        for a in args {
-            match a {
-                Value::Int(n) => p *= n,
-                _ => return Err(SchemeError::msg("*: not an int")),
-            }
-        }
-        Ok(Value::Int(p))
-    });
-    it.register("=", Arity::Exact(2), |_it, args| {
-        Ok(Value::Bool(args[0].eq(&args[1])))
-    });
-    it.register("<", Arity::Exact(2), |_it, args| match (&args[0], &args[1]) {
-        (Value::Int(a), Value::Int(b)) => Ok(Value::Bool(a < b)),
-        _ => Err(SchemeError::msg("<: not ints")),
-    });
-    it.register("zero?", Arity::Exact(1), |_it, args| {
-        Ok(Value::Bool(matches!(&args[0], Value::Int(0))))
-    });
 }
 
 #[test]
