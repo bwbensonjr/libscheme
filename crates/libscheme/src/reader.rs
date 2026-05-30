@@ -19,6 +19,11 @@ use crate::value::Value;
 pub struct Reader {
     chars: Vec<char>,
     pos: usize,
+    /// Set when `read` failed because input ran out *in the middle* of a datum
+    /// (an unclosed list, string, block comment, etc.) as opposed to a genuine
+    /// syntax error. The interactive REPL uses this to keep reading more lines
+    /// instead of reporting an error — see [`Reader::incomplete`].
+    incomplete: bool,
 }
 
 impl Reader {
@@ -26,12 +31,32 @@ impl Reader {
         Reader {
             chars: input.chars().collect(),
             pos: 0,
+            incomplete: false,
         }
     }
 
     /// Build a reader over an explicit char buffer, starting at `start`.
     pub fn from_chars(chars: Vec<char>, start: usize) -> Self {
-        Reader { chars, pos: start }
+        Reader {
+            chars,
+            pos: start,
+            incomplete: false,
+        }
+    }
+
+    /// Whether the most recent [`read`](Reader::read) error was caused by input
+    /// ending in the middle of a datum (so more input would complete it),
+    /// rather than by malformed syntax. The REPL reads another line and retries
+    /// when this is true; file/string loading ignores it and just reports.
+    pub fn incomplete(&self) -> bool {
+        self.incomplete
+    }
+
+    /// Record that input ended mid-datum and build the matching error. Callers
+    /// `return Err(self.eof_in(...))` from the EOF arms of the datum readers.
+    fn eof_in(&mut self, what: &str) -> SchemeError {
+        self.incomplete = true;
+        SchemeError::msg(format!("read: end of file in {what}"))
     }
 
     /// Current cursor position — used to advance a port after reading one datum.
@@ -149,7 +174,7 @@ impl Reader {
         loop {
             self.skip_atmosphere()?;
             match self.peek() {
-                None => return Err(SchemeError::msg("read: end of file in list")),
+                None => return Err(self.eof_in("list")),
                 Some(c) if c == close => {
                     self.getc();
                     break;
@@ -158,8 +183,12 @@ impl Reader {
                     self.getc(); // consume '.'
                     tail = self.read(it)?;
                     self.skip_atmosphere()?;
-                    if self.peek() != Some(close) {
-                        return Err(SchemeError::msg("read: malformed list"));
+                    match self.peek() {
+                        None => return Err(self.eof_in("list")),
+                        Some(c) if c != close => {
+                            return Err(SchemeError::msg("read: malformed list"))
+                        }
+                        _ => {}
                     }
                     self.getc();
                     break;
@@ -181,10 +210,10 @@ impl Reader {
         let mut s = String::new();
         loop {
             match self.getc() {
-                None => return Err(SchemeError::msg("read: end of file in string")),
+                None => return Err(self.eof_in("string")),
                 Some('"') => break,
                 Some('\\') => match self.getc() {
-                    None => return Err(SchemeError::msg("read: end of file in string")),
+                    None => return Err(self.eof_in("string")),
                     Some(c) => s.push(c),
                 },
                 Some(c) => s.push(c),
@@ -283,7 +312,7 @@ impl Reader {
     /// or a single literal character.
     fn read_character(&mut self) -> SchemeResult {
         let first = match self.getc() {
-            None => return Err(SchemeError::msg("read: end of file after #\\")),
+            None => return Err(self.eof_in("character constant")),
             Some(c) => c,
         };
         // A multi-letter name only when the first char is alphabetic AND the
@@ -333,7 +362,7 @@ impl Reader {
     fn skip_block_comment(&mut self) -> SchemeResult<()> {
         loop {
             match self.getc() {
-                None => return Err(SchemeError::msg("read: end of file in #| comment")),
+                None => return Err(self.eof_in("#| comment")),
                 Some('|') if self.peek() == Some('#') => {
                     self.getc();
                     return Ok(());
@@ -465,5 +494,21 @@ mod tests {
         let mut r = Reader::new("1");
         assert!(r.read(&mut it).unwrap().eq(&Value::Int(1)));
         assert!(matches!(r.read(&mut it).unwrap(), Value::Eof));
+    }
+
+    #[test]
+    fn flags_incomplete_input_distinctly_from_errors() {
+        let mut it = Interp::new();
+        // Input ending mid-datum is recoverable: `incomplete` is set so the
+        // REPL knows to read another line.
+        for src in ["(+ 1", "\"unterminated", "#| open comment", "(1 . 2"] {
+            let mut r = Reader::new(src);
+            assert!(r.read(&mut it).is_err(), "{src:?} should error");
+            assert!(r.incomplete(), "{src:?} should be incomplete");
+        }
+        // A genuine syntax error is NOT incomplete — more input won't help.
+        let mut r = Reader::new(")");
+        assert!(r.read(&mut it).is_err());
+        assert!(!r.incomplete());
     }
 }
