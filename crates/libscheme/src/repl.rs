@@ -78,8 +78,8 @@ pub fn load_files(it: &mut Interp, files: &[String]) {
     }
 }
 
-/// The interactive loop. Reads one datum per line-group from stdin, evaluates,
-/// and writes the result.
+/// The interactive loop. Reads one datum from stdin — spanning as many lines as
+/// the datum needs — evaluates it, and writes the result.
 fn repl(it: &mut Interp) {
     println!("libscheme Scheme interpreter");
     let stdin = io::stdin();
@@ -88,26 +88,45 @@ fn repl(it: &mut Interp) {
         print!("> ");
         let _ = io::stdout().flush();
         buffer.clear();
-        // Read a line; accumulate until we have at least one complete datum or EOF.
-        match stdin.lock().read_line(&mut buffer) {
-            Ok(0) => {
-                println!("\n; done");
-                return;
+        // Accumulate lines until the reader can parse one complete datum. A
+        // form that spans several lines (an unclosed list, string, etc.) leaves
+        // the reader `incomplete`, so we print a continuation prompt and read
+        // more rather than reporting a spurious "end of file" error.
+        let form = loop {
+            match stdin.lock().read_line(&mut buffer) {
+                Ok(0) => {
+                    println!("\n; done");
+                    return;
+                }
+                Ok(_) => {}
+                Err(e) => {
+                    eprintln!("read error: {e}");
+                    return;
+                }
             }
-            Ok(_) => {}
-            Err(e) => {
-                eprintln!("read error: {e}");
-                return;
+            let mut r = Reader::new(&buffer);
+            match r.read(it) {
+                Ok(form) => break form,
+                Err(e) if r.incomplete() => {
+                    // Datum continues on the next line — keep the buffer and
+                    // prompt for more.
+                    let _ = e;
+                    print!("  ");
+                    let _ = io::stdout().flush();
+                    continue;
+                }
+                Err(e) => {
+                    report_error(it, &e);
+                    break Value::Eof;
+                }
             }
-        }
-        let mut r = Reader::new(&buffer);
-        match r.read(it) {
-            Ok(Value::Eof) => continue,
-            Ok(form) => match it.eval(form, Env::root()) {
+        };
+        match form {
+            Value::Eof => continue,
+            form => match it.eval(form, Env::root()) {
                 Ok(v) => println!("{}", write_to_string(it, &v)),
                 Err(e) => report_error(it, &e),
             },
-            Err(e) => report_error(it, &e),
         }
     }
 }
