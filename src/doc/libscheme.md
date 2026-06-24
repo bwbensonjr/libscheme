@@ -627,16 +627,18 @@ can be caught by evaluating an expression within a
 an error occurs during the execution, the value second argument is
 returned, otherwise, the value of the first expression is returned.
 
-      obj = scheme_read (stdin);
-      result = SCHEME_CATCH_ERROR (scheme_eval (obj, env), 0);
-      if (result == 0)
-         {
-           /* error handling code */
-         }
-      else
-         {
-           scheme_write (stdout, result);
-         }
+```
+obj = scheme_read (stdin);
+result = SCHEME_CATCH_ERROR (scheme_eval (obj, env), 0);
+if (result == 0)
+ {
+   /* error handling code */
+ }
+else
+ {
+   scheme_write (stdout, result);
+ }
+```
 
 ### Memory Allocation/Garbage Collection
 
