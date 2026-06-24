@@ -79,7 +79,7 @@ strings based on a delimiter character.
 
 <figure id="fig:split">
 <div class="center">
-<pre><code>(define (split-string string delimiter)
+<pre>(define (split-string string delimiter)
   (let ((len (string-length string)))
 
     ; Collect characters until we reach a delimiter character, 
@@ -97,8 +97,7 @@ strings based on a delimiter character.
 
     ; Start at the beginning of the string.
     ;
-    (collect 0 0)))
-</code></pre>
+    (collect 0 0)))</pre>
 </div>
 <figcaption>A sample Scheme function</figcaption>
 </figure>
