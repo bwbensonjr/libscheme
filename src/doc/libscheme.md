@@ -3,7 +3,7 @@
 <div align="center"><i>Harris Computer Systems</i></div>
 <div align="center"><tt>Brent.Benson@mail.csd.harris.com</tt></div>
 
-# Introduction
+## Introduction
 
 There is a long tradition of scripting languages in the Unix community,
 the canonical example being `/bin/sh` [@bib:bourne]. Scripting languages
@@ -30,11 +30,8 @@ interactive shell program, it has several advantages over Tcl with
 respect to writing scripts:
 
 1.  Lexical Scope
-
 2.  Nested procedures
-
 3.  A richer set of data types
-
 4.  Extensible syntax
 
 In addition, `libscheme` allows the application writer to extend the
@@ -42,7 +39,7 @@ interpreter with new data types that have the same standing as built in
 types. It also provides a conservative garbage collector that can be
 used by application and extension writers.
 
-# Scheme
+## Scheme
 
 Scheme is a small, lexically scoped dialect of Lisp that is based on the
 principle that a programming language should not include everything but
@@ -70,11 +67,10 @@ Scheme supports all major programming paradigms in use today including
 functional, procedural, and object oriented. It scales well from small
 applications to large software systems.
 
-## An Example Procedure
+### An Example Procedure
 
 Let us examine a small Scheme procedure to get a feel for the language.
-The procedure in figure [1](#fig:split){reference-type="ref"
-reference="fig:split"} splits a string of characters into a list of
+The procedure in *Figure 1* splits a string of characters into a list of
 strings based on a delimiter character.
 
 ```
@@ -114,11 +110,12 @@ to succeed. The `else` clause of a `cond` form is executed if no other
 clause succeeds. Scheme also has other standard control constructs like
 `if` and `case`.
 
-    > (split-string "brent:WgG6SfAUnX5lQ:5359:100:Brent Benson" #\:)
-    ("brent" "WgG6SfAUnX5lQ" "5359" "100" "Brent Benson")
-    > 
+```
+> (split-string "brent:WgG6SfAUnX5lQ:5359:100:Brent Benson" #\:)
+("brent" "WgG6SfAUnX5lQ" "5359" "100" "Brent Benson")
+```
 
-## Closures
+### Closures
 
 Procedures are first class in Scheme, meaning that procedures can be
 assigned to variables, passed as arguments to other procedures, be
@@ -139,11 +136,13 @@ elements, and a comparison procedure that is used to establish an
 ordering on the elements. It is often useful to use an unnamed procedure
 as the comparison function:
 
-    > (sort '(1 6 3 4) (lambda (n1 n2) (< n1 n2)))
-    (1 3 4 6)
-    > (sort #("jim" "brent" "jason" "todd") 
-            (lambda (s1 s2) (string<? s1 s2)))
-    #("brent" "jason" "jim" "todd")
+```
+> (sort '(1 6 3 4) (lambda (n1 n2) (< n1 n2)))
+(1 3 4 6)
+> (sort #("jim" "brent" "jason" "todd") 
+        (lambda (s1 s2) (string<? s1 s2)))
+#("brent" "jason" "jim" "todd")
+```
 
 Note that `(1 2 3 4)` is a list of numbers and `#("jim" ...)` is a
 vector of strings.
@@ -152,25 +151,27 @@ The next example shows the definition of a procedure `make-counter` that
 returns another procedure created with `lambda` that closes over the
 `count` variable.
 
-    > (define (make-counter)
-        (let ((count 0))
-          (lambda ()
-            (set! count (+ count 1))
-            count)))
-    make-counter
-    > (define c1 (make-counter))
-    c1
-    > (c1)
-    1
-    > (c1)
-    2
+```
+> (define (make-counter)
+    (let ((count 0))
+      (lambda ()
+        (set! count (+ count 1))
+        count)))
+make-counter
+> (define c1 (make-counter))
+c1
+> (c1)
+1
+> (c1)
+2
+```
 
 Since no one else has access to `count` it becomes private to the
 closure and can be modified and used within its context. In this
 particular case, `count` is incremented and its value returned when the
 procedure returned from `make-counter` is called.
 
-## Syntax
+### Syntax
 
 As you have probably already noticed, Scheme's syntax is Lisp-like. All
 function applications are in fully-parenthesized prefix form. While some
@@ -186,7 +187,7 @@ expression.
 These macros are much more powerful than the simple token-based
 substitution macros provided by languages like C.
 
-# An Application that Uses `libdwarf`
+## An Application that Uses `libdwarf`
 
 The `libscheme` library makes Scheme available as a C library. Its
 interface is through a single C header file. Scheme expressions can be
@@ -196,7 +197,7 @@ user can extend the interpreter by adding bindings to the global
 environment. Each binding can provide a new primitive written in C, a
 new syntax form, a new type, a constant, etc.
 
-## An Example
+### An Example
 
 DWARF is a full-featured and complex debugging information
 format [@bib:dwarf]. Our example program, `dwarfscheme`, is an interface
@@ -407,7 +408,7 @@ contains a pointer to the `Dwarf_Die` structure.
 Now that we have a feel for the way that `libscheme` is extended, we
 will take a closer look at the design of `libscheme` itself.
 
-# `libscheme` Architecture
+## `libscheme` Architecture
 
 This section describes some specifics of `libscheme`'s implementation.
 An important feature of its design is that beyond a small kernel of
@@ -415,7 +416,7 @@ routines for memory management, error handling, and evaluation, all of
 its Scheme primitives are implemented in the same way as non-`libscheme`
 extensions. This is similar to Tcl's implementation strategy.
 
-## Object Representation {#sec:object}
+### Object Representation {#sec:object}
 
 Every object in `libscheme` is an instance of the C structure
 `Scheme_Object`. Each instance of `Scheme_Object` contains a pointer to
@@ -464,7 +465,7 @@ heavy small integer arithmetic will allocate garbage that must be
 collected, in contrast to higher performance Scheme implementations that
 only dynamically allocate very large integers.
 
-## Primitive Functions
+### Primitive Functions
 
 Primitive functions in Scheme are implemented as C functions that take
 two arguments, an argument count and a vector of `Scheme_Object`s. Each
@@ -478,7 +479,7 @@ a syntax primitive. C functions are turned into `libscheme` primitives
 with the `scheme_make_prim()` function that accepts the C function as an
 argument and returns a new Scheme object of type `scheme_prim_type`.
 
-## Primitive Syntax
+### Primitive Syntax
 
 The user can add new primitive syntax and special forms to `libscheme`.
 A `libscheme` syntax form is implemented as a C function that takes two
@@ -531,7 +532,7 @@ C functions that represent syntax forms are turned into Scheme objects
 by passing them to the `scheme_make_syntax()` procedure which returns a
 new object of type `scheme_syntax_type`.
 
-## Type Extensions
+### Type Extensions
 
 Scheme as defined in its standard has the following data types: boolean,
 list, symbol, number, character, string, vector, and procedure. While
@@ -578,7 +579,7 @@ predicate that returns a true or false value. All of the builtin types
 have type predicate macros of this form (e.g., `SCHEME_PAIRP`,
 `SCHEME_VECTORP`, etc.).
 
-## Environment Representation
+### Environment Representation
 
 The state of the interpreter is contained in an object of type
 `Scheme_Env`. The environment contains both global and local bindings.
@@ -631,7 +632,7 @@ primitives, types, etc. using `scheme_add_global()`.
 :::
 ::::
 
-## Interpreter Interface
+### Interpreter Interface
 
 The `libscheme` functions that are used for reading, evaluating and
 writing expressions are listed in
@@ -653,7 +654,7 @@ table [2](#tab:interp){reference-type="ref" reference="tab:interp"}.
 These functions can be used in the context of a read-eval-print loop or
 called at arbitrary times during program execution.
 
-## Error Handling
+### Error Handling
 
 The `libscheme` library provides rudimentary error handling support.
 Errors are signaled using the `scheme_signal_error()` function, or by
@@ -676,7 +677,7 @@ returned, otherwise, the value of the first expression is returned.
            scheme_write (stdout, result);
          }
 
-## Memory Allocation/Garbage Collection
+### Memory Allocation/Garbage Collection
 
 The `libscheme` library uses Hans Boehm and Alan Demers' conservative
 garbage collector [@bib:boehm]. It provides a replacement for the C
@@ -698,7 +699,7 @@ objects need to be allocated dynamically.
 The Boehm/Demers collector is freely available and can run on most any
 32-bit Unix machine.
 
-# Pros, Cons and Future Work
+## Pros, Cons and Future Work
 
 The `libscheme` library is simple to understand and use. It builds on
 the powerful semantic base of the Scheme programming language. The
@@ -725,7 +726,7 @@ The author plans to make `libscheme` even more useful by providing a
 variety of useful bindings including interfaces to the POSIX system
 calls, a socket library, a regular expression package, etc.
 
-# Conclusion
+## Conclusion
 
 The `libscheme` library makes Scheme available as a standard C library
 and is easily extended with new primitives, types, and syntax. It runs
