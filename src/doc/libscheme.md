@@ -607,6 +607,7 @@ writing expressions are listed in
 table [2](#tab:interp){reference-type="ref" reference="tab:interp"}.
 
 | &nbsp; | &nbsp; |
+| --- | --- |
 |  `scheme_read (fp)`          | Read an expression from stream |
 |  `scheme_eval (obj, env)`    | Evaluate an object in environment |
 |  `scheme_write (fp, obj)`    | Write object in machine readable form |
