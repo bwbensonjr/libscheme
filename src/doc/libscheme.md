@@ -1,7 +1,7 @@
 <h1 align="center">libscheme: Scheme as a C Library</h1>
 <div align="center">Brent W. Benson Jr.</div>
 <div align="center"><i>Harris Computer Systems</i></div>
-<div align="center">`Brent.Benson@mail.csd.harris.com`</div>
+<div align="center"><pre>Brent.Benson@mail.csd.harris.com</pre></div>
 
 # Introduction
 
