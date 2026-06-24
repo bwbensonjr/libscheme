@@ -597,14 +597,12 @@ which can then be extended with new primitives, types, etc. using
 | `scheme_lookup_value (sym, env)`      | Lookup the value of a variable |
 | `scheme_lookup_global (sym, env)`     | Lookup the value of a global |
 | `scheme_set_value (sym, val, env)`    | Set the value of a variable |
-
 Table 1: *Environment manipulation functions*
 
 ### Interpreter Interface
 
 The `libscheme` functions that are used for reading, evaluating and
-writing expressions are listed in
-table [2](#tab:interp){reference-type="ref" reference="tab:interp"}.
+writing expressions are listed in Table 2.
 
 | &nbsp; | &nbsp; |
 | --- | --- |
@@ -612,6 +610,7 @@ table [2](#tab:interp){reference-type="ref" reference="tab:interp"}.
 |  `scheme_eval (obj, env)`    | Evaluate an object in environment |
 |  `scheme_write (fp, obj)`    | Write object in machine readable form |
 |  `scheme_display (fp, obj)`  | Write object in human readable form |
+Table 2: *Interaction functions*
 
 These functions can be used in the context of a read-eval-print loop or
 called at arbitrary times during program execution.
@@ -703,8 +702,7 @@ of other projects. The latest version of `libscheme` can be obtained
 from the Scheme Repository, `ftp.cs.indiana.edu`, in the directory
 `/pub/imp/`.
 
-::: thebibliography
-99
+## Bibliography
 
 Hans Boehm and M. Weiser. *Garbage Collection in an Uncooperative
 Environment*. Software Practice and Experience. pp. 807-820. September,
@@ -732,7 +730,7 @@ anonymous ftp from `dg-rtp.dg.com`. 1994.
 *DWARF Access Library (libdwarf)*. Unix International. 1994.
 :::
 
-# The Author {#the-author .unnumbered}
+## The Author
 
 Brent Benson received a BA in Mathematics from the University of
 Rochester 1990 and completed the work for his MS in Computer Science at
