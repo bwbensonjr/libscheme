@@ -203,17 +203,15 @@ DWARF is a full-featured and complex debugging information
 format [@bib:dwarf]. Our example program, `dwarfscheme`, is an interface
 that allows the user to browse DWARF information in an object file by
 providing stubs to the `libdwarf` [@bib:libdwarf] library.
-Figure [2](#fig:dialogue){reference-type="ref" reference="fig:dialogue"}
-shows a sample `dwarfscheme` dialogue.
+Figure [2] shows a sample `dwarfscheme` dialogue.
 
-<figure id="fig:dialogue">
-<div class="center">
-<pre><code>$ ./dwarfscheme
-&gt; (define dbg (dwarf-init &quot;a.out&quot;))
+```
+$ ./dwarfscheme
+> (define dbg (dwarf-init &quot;a.out&quot;))
 dbg
-&gt; (define die1 (dwarf-first-die dbg))
+> (define die1 (dwarf-first-die dbg))
 die1
-&gt; (define (dwarf-print-die die)
+> (define (dwarf-print-die die)
     (display (dwarf-tag-string (dwarf-tag die)))
     (newline)
     (for-each 
@@ -225,7 +223,7 @@ die1
         (newline))
       (dwarf-attributes die)))
 dwarf-print-die
-&gt; (dwarf-print-die die1)
+> (dwarf-print-die die1)
 DW_TAG_compile_unit
   DW_AT_comp_dir &quot;CX/UX:/jade2/ccg/brent/misc/package/dwarf&quot;
   DW_AT_identifier_case 0
@@ -236,11 +234,9 @@ DW_TAG_compile_unit
   DW_AT_producer &quot;Harris C Compiler - Version build_c_7.1p1_03&quot;
   DW_AT_stmt_list 0
 #t
-&gt; (exit)
-$ </code></pre>
-</div>
-<figcaption><span><code>dwarfscheme</code></span> dialogue</figcaption>
-</figure>
+> (exit)
+```
+Figure 2: *`dwarfscheme` dialogue*
 
 In this example the user invokes `dwarfscheme`, opens the file `"a.out"`
 for DWARF reading, defines a function for printing out debugging
@@ -253,14 +249,12 @@ The program `dwarfscheme` is an executable that was produced by linking
 `libscheme` with a set of DWARF manipulating primitives, a
 read-eval-print loop that initializes the primitives, and the `libdwarf`
 library that is provided as a system library. The main routine for
-`dwarfscheme` appears in figure [3](#fig:simple){reference-type="ref"
-reference="fig:simple"}.
+`dwarfscheme` appears in Figure [3].
 
-<figure id="fig:simple">
-<div class="center">
-<pre><code>#include &lt;stdio.h&gt;
-#include &quot;scheme.h&quot;
-#include &quot;dwarfscheme.h&quot;
+```
+#include <stdio.h>
+#include "scheme.h"
+#include "dwarfscheme.h"
 
 main()
 {
@@ -272,23 +266,21 @@ main()
   scheme_default_handler ();
   do
     {
-      printf (&quot;&gt; &quot;);
+      printf ("> ");
       obj = scheme_read (stdin);
       if (obj == scheme_eof)
         {
-          printf (&quot;\n; done\n&quot;);
+          printf ("\n; done\n");
           exit (0);
         }
       obj = scheme_eval (obj, env);
       scheme_write (stdout, obj);
-      printf (&quot;\n&quot;);
+      printf ("\n");
     }
   while ( 1 );
-}</code></pre>
-</div>
-<figcaption><span><code>dwarfscheme</code></span> read-eval-print
-loop</figcaption>
-</figure>
+}
+```
+Figure 3: *`dwarfscheme` read-eval-print loop*
 
 This main routine is a boiler-plate routine that is used when the
 application writer wants to make the application a Scheme
@@ -311,8 +303,7 @@ evaluate Scheme expressions to further configure and query the system's
 state.
 
 The major part of the DWARF initialization routine, `init_dwarf()`
-appears in figure [4](#fig:init){reference-type="ref"
-reference="fig:init"}. It consists of calls to `scheme_make_type()` to
+appears in Figure [4]. It consists of calls to `scheme_make_type()` to
 establish new data types, and then several calls to
 `scheme_add_global()` to add new global bindings to the environment
 provided as an argument. Each call to `scheme_add_global()` provides the
@@ -323,31 +314,29 @@ variables that are part of the `dwarfscheme` interface begin with a `dw`
 prefix, while routines and variables from the system-supplied `libdwarf`
 library begin with a `dwarf` prefix.
 
-<figure id="fig:init">
-<div class="center">
-<pre><code>static Scheme_Object *dw_debug_type;
+```
+static Scheme_Object *dw_debug_type;
 static Scheme_Object *dw_die_type;
 static Scheme_Object *dw_first_die (int argc, Scheme_Object *argv[]);
 ...
 void
 init_dw (Scheme_Env *env)
 {
-  dw_debug_type = scheme_make_type (&quot;&lt;debug&gt;&quot;);
-  dw_die_type = scheme_make_type (&quot;&lt;die&gt;&quot;);
-  dw_attribute_type = scheme_make_type (&quot;&lt;attribute&gt;&quot;);
-  scheme_add_global (&quot;dwarf-init&quot;, 
+  dw_debug_type = scheme_make_type ("<debug>");
+  dw_die_type = scheme_make_type ("<die>");
+  dw_attribute_type = scheme_make_type ("<attribute>");
+  scheme_add_global ("dwarf-init", 
                      scheme_make_prim (dw_init), env);
-  scheme_add_global (&quot;dwarf-first-die&quot;, 
+  scheme_add_global ("dwarf-first-die", 
                      scheme_make_prim (dw_first_die), env);
-  scheme_add_global (&quot;dwarf-next-die&quot;, 
+  scheme_add_global ("dwarf-next-die", 
                      scheme_make_prim (dw_next_die), env);
-  scheme_add_global (&quot;dwarf-tag&quot;, 
+  scheme_add_global ("dwarf-tag", 
                      scheme_make_prim (dw_tag), env);
   ...
-}</code></pre>
-</div>
-<figcaption>The DWARF primitive initialization routine</figcaption>
-</figure>
+}
+```
+Figure 4: The DWARF primitive initialization routine
 
 This practice of calling an initialization routine with the environment
 for each logical piece of code is only a convention, but is a helpful
@@ -355,28 +344,25 @@ way of organizing `libscheme` code. The `libscheme` library itself is
 organized this way. Each file contains an initialization function that
 establishes that file's primitives.
 
-A sample primitive is shown in
-figure [5](#fig:prim){reference-type="ref" reference="fig:prim"}. Each
-`libscheme` primitive accepts an argument count and a vector of
-evaluated arguments. Each primitive procedure is responsible for
-checking the number and type of its arguments. All Scheme objects are
-represented by the C type `Scheme_Object` (see
-section [4.1](#sec:object){reference-type="ref"
+A sample primitive is shown in Figure 5. Each `libscheme` primitive
+accepts an argument count and a vector of evaluated arguments. Each
+primitive procedure is responsible for checking the number and type of
+its arguments. All Scheme objects are represented by the C type
+`Scheme_Object` (see section [4.1](#sec:object){reference-type="ref"
 reference="sec:object"}). The types `Dwarf_Debug` and `Dwarf_Die` are
 foreign to `libscheme` and are provided by the `libdwarf` library.
 
-<figure id="fig:prim">
-<div class="center">
-<pre><code>static Scheme_Object *
+```
+static Scheme_Object *
 dw_first_die (int argc, Scheme_Object *argv[])
 {
   Dwarf_Debug dbg;
   Dwarf_Die die;
 
   SCHEME_ASSERT ((argc == 1), 
-                 &quot;dwarf-first-die: wrong number of args&quot;);
+                 "dwarf-first-die: wrong number of args");
   SCHEME_ASSERT (DWARF_DEBUGP (argv[0]), 
-                 &quot;dwarf-first-die: arg must be a debug object&quot;);
+                 "dwarf-first-die: arg must be a debug object");
   dbg = (Dwarf_Debug) SCHEME_PTR_VAL (argv[0]);
   die = dwarf_nextdie (dbg, NULL, NULL);
   if (! die)
@@ -387,11 +373,9 @@ dw_first_die (int argc, Scheme_Object *argv[])
     {
       return (dw_make_die (die));
     }
-}</code></pre>
-</div>
-<figcaption>A <span><code>dwarfscheme</code></span>
-primitive</figcaption>
-</figure>
+}
+```
+Figure 5: *A `dwarfscheme` primitive*
 
 The `SCHEME_ASSERT()` macro asserts that a particular form evaluates to
 true, and signals an error otherwise. The `dw_first_die()` routine first
@@ -425,12 +409,10 @@ words. If an object requires more than two words of storage or if the
 object is some other type of foreign C structure, it is stored in a
 separate memory location and pointed to by the `ptr_val` field. The
 actual definition of `Scheme_Object` appears in
-figure [6](#fig:schemeobj){reference-type="ref"
-reference="fig:schemeobj"}.
+Figure 6.
 
-<figure id="fig:schemeobj">
-<div class="center">
-<pre><code>struct Scheme_Object
+```
+struct Scheme_Object
 {
   struct Scheme_Object *type;
   union
@@ -450,11 +432,9 @@ reference="fig:schemeobj"}.
       struct { struct Scheme_Env *env; 
                struct Scheme_Object *code; } closure_val;
     } u;
-};</code></pre>
-</div>
-<figcaption>The definition of
-<span><code>Scheme_Object</code></span></figcaption>
-</figure>
+};
+```
+Figure 6: *The definition of `Scheme_Object`*
 
 While many Scheme implementations choose to represent certain special
 objects as immediate values (e.g., small integers, characters, the empty
@@ -481,21 +461,19 @@ argument and returns a new Scheme object of type `scheme_prim_type`.
 
 ### Primitive Syntax
 
-The user can add new primitive syntax and special forms to `libscheme`.
-A `libscheme` syntax form is implemented as a C function that takes two
-arguments, an expression and an environment in which the expression
-should be evaluated. The form is passed directly to the syntax form with
-no evaluation performed. This allows the syntax primitive itself to
-evaluate parts of the form as needed.
-Figure [7](#fig:if){reference-type="ref" reference="fig:if"} shows the
-implementation of the `if` special form. Note that `if` cannot be
-implemented as a procedure because it must not evaluate all of its
-arguments. The `scheme_eval()` function evaluates a `libscheme`
+The user can add new primitive syntax and special forms to
+`libscheme`.  A `libscheme` syntax form is implemented as a C function
+that takes two arguments, an expression and an environment in which
+the expression should be evaluated. The form is passed directly to the
+syntax form with no evaluation performed. This allows the syntax
+primitive itself to evaluate parts of the form as needed.  Figure 7
+shows the implementation of the `if` special form. Note that `if`
+cannot be implemented as a procedure because it must not evaluate all
+of its arguments. The `scheme_eval()` function evaluates a `libscheme`
 expression with respect to a particular environment.
 
-<figure id="fig:if">
-<div class="center">
-<pre><code>static Scheme_Object *
+```
+static Scheme_Object *
 if_syntax (Scheme_Object *form, Scheme_Env *env)
 {
   int len;
@@ -503,7 +481,7 @@ if_syntax (Scheme_Object *form, Scheme_Env *env)
 
   len = scheme_list_length (form);
   SCHEME_ASSERT (((len == 3) || (len == 4)), 
-                 &quot;badly formed if statement&quot;);
+                 "badly formed if statement");
   test = SCHEME_SECOND (form));
   test = scheme_eval (test, env);
   if (test != scheme_false)
@@ -523,10 +501,9 @@ if_syntax (Scheme_Object *form, Scheme_Env *env)
           return (scheme_false);
         }
     }
-}</code></pre>
-</div>
-<figcaption>The <span><code>if</code></span> special form</figcaption>
-</figure>
+}
+```
+Figure 7: *The `if` special form*
 
 C functions that represent syntax forms are turned into Scheme objects
 by passing them to the `scheme_make_syntax()` procedure which returns a
@@ -545,16 +522,14 @@ objects. Normally, types are created in a file's initialization function
 and objects of the new type are created using a user-defined constructor
 function that allocates and initializes instances of the type.
 
-In figure [8](#fig:constr){reference-type="ref" reference="fig:constr"}
-we see the constructor for the `dw_debug_type` type from our
+In Figure 8 we see the constructor for the `dw_debug_type` type from our
 `dwarfscheme` example. It accepts an object of type `Dwarf_Debug`, a
 pointer to a C structure defined in the `libdwarf` library, allocates a
 new `Scheme_Object`, sets the object type, and stores the pointer to the
 foreign structure into the `ptr_val` slot of the object.
 
-<figure id="fig:constr">
-<div class="center">
-<pre><code>static Scheme_Object *
+```
+static Scheme_Object *
 dw_make_debug (Dwarf_Debug dbg)
 {
   Scheme_Object *debug;
@@ -563,16 +538,17 @@ dw_make_debug (Dwarf_Debug dbg)
   SCHEME_TYPE (debug) = dw_debug_type;
   SCHEME_PTR_VAL (debug) = dbg;
   return (debug);
-}</code></pre>
-</div>
-<figcaption>An object constructor</figcaption>
-</figure>
+}
+```
+Figure 8: *An object constructor*
 
 It is often convenient to define a macro that checks whether a
 `libscheme` object is of a specified type. The macro defined in
 `dwarfscheme` for the DWARF debug object looks like this:
 
-    #define DW_DEBUGP(obj) (SCHEME_TYPE(obj) == dwarf_debug_type)
+```
+#define DW_DEBUGP(obj) (SCHEME_TYPE(obj) == dwarf_debug_type)
+```
 
 The 'P' at the end of `DW_DEBUGP` indicates that the macro is a
 predicate that returns a true or false value. All of the builtin types
@@ -583,54 +559,45 @@ have type predicate macros of this form (e.g., `SCHEME_PAIRP`,
 
 The state of the interpreter is contained in an object of type
 `Scheme_Env`. The environment contains both global and local bindings.
-The definition of the `Scheme_Env` structure is shown in
-figure [9](#fig:env){reference-type="ref" reference="fig:env"}. The
+The definition of the `Scheme_Env` structure is shown in Figure 9. The
 global variable bindings are held in a hash table. The local bindings
 are represented by a vector of variables (symbols) and a vector of
 corresponding values. An environment that holds local variables points
-to the enclosing environment with its `next` field. Therefore, variable
-value lookup consists of walking the environment chain, looking for a
-local variable of the correct name. If no local binding is found, the
-variable is looked for in the global hash table.
+to the enclosing environment with its `next` field. Therefore,
+variable value lookup consists of walking the environment chain,
+looking for a local variable of the correct name. If no local binding
+is found, the variable is looked for in the global hash table.
 
-<figure id="fig:env">
-<div class="center">
-<pre><code>struct Scheme_Env
+```
+struct Scheme_Env
 {
   int num_bindings;
   struct Scheme_Object **symbols;
   struct Scheme_Object **values;
   Scheme_Hash_Table *globals;
   struct Scheme_Env *next;
-};</code></pre>
-</div>
-<figcaption>The <span><code>Scheme_Env</code></span>
-structure</figcaption>
-</figure>
+};
+```
+Figure 9: *The `Scheme_Env` structure*
 
-Table [1](#tab:env){reference-type="ref" reference="tab:env"} lists the
-environment manipulation functions. Unless the user is adding special
-forms that create variable bindings, she usually only needs to worry
-about the `scheme_basic_env()` and `scheme_add_global()` functions. The
-`scheme_basic_env()` function is used to create a new environment with
-the standard Scheme bindings which can then be extended with new
-primitives, types, etc. using `scheme_add_global()`.
+Table 1 lists the environment manipulation functions. Unless the user
+is adding special forms that create variable bindings, she usually
+only needs to worry about the `scheme_basic_env()` and
+`scheme_add_global()` functions. The `scheme_basic_env()` function is
+used to create a new environment with the standard Scheme bindings
+which can then be extended with new primitives, types, etc. using
+`scheme_add_global()`.
 
-:::: center
-::: {#tab:env}
-  -------------------------------------- --------------------------------
-  `scheme_basic_env ()`                  Return a new `libscheme` env
-  `scheme_add_global (name, val, env)`   Add a new global binding
-  `scheme_add_frame (syms, vals, env)`   Add a frame of local bindings
-  `scheme_pop_frame (env)`               Pop a local frame
-  `scheme_lookup_value (sym, env)`       Lookup the value of a variable
-  `scheme_lookup_global (sym, env)`      Lookup the value of a global
-  `scheme_set_value (sym, val, env)`     Set the value of a variable
-  -------------------------------------- --------------------------------
-
-  : Environment manipulation functions
-:::
-::::
+|--|--|
+| `scheme_basic_env ()`                 | Return a new `libscheme` env |
+| `scheme_add_global (name, val, env)`  | Add a new global binding |
+| `scheme_add_frame (syms, vals, env)`  | Add a frame of local bindings |
+| `scheme_pop_frame (env)`              | Pop a local frame |
+| `scheme_lookup_value (sym, env)`      | Lookup the value of a variable |
+| `scheme_lookup_global (sym, env)`     | Lookup the value of a global |
+| `scheme_set_value (sym, val, env)`    | Set the value of a variable |
+|--|--|
+Table 1: *Environment manipulation functions*
 
 ### Interpreter Interface
 
