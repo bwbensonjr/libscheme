@@ -77,9 +77,8 @@ The procedure in figure [1](#fig:split){reference-type="ref"
 reference="fig:split"} splits a string of characters into a list of
 strings based on a delimiter character.
 
-<figure id="fig:split">
-<div class="center">
-<pre>(define (split-string string delimiter)
+```
+(define (split-string string delimiter)
   (let ((len (string-length string)))
 
     ; Collect characters until we reach a delimiter character, 
@@ -97,10 +96,10 @@ strings based on a delimiter character.
 
     ; Start at the beginning of the string.
     ;
-    (collect 0 0)))</pre>
-</div>
-<figcaption>A sample Scheme function</figcaption>
-</figure>
+    (collect 0 0)))
+```
+Figure 1: *A sample Scheme function*
+
 
 In this example we have a top-level definition of the `split-string`
 function and an *internal definition* of the `collect` function. An
