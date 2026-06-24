@@ -1,9 +1,9 @@
-::: center
+<p align="center">
 **libscheme: Scheme as a C Library**\
 Brent W. Benson Jr.\
 *Harris Computer Systems*\
 `Brent.Benson@mail.csd.harris.com`
-:::
+</p>
 
 # Introduction
 
