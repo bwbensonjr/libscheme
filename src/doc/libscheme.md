@@ -588,8 +588,7 @@ used to create a new environment with the standard Scheme bindings
 which can then be extended with new primitives, types, etc. using
 `scheme_add_global()`.
 
-| | |
-|--|--|
+| --- | --- |
 | `scheme_basic_env ()`                 | Return a new `libscheme` env |
 | `scheme_add_global (name, val, env)`  | Add a new global binding |
 | `scheme_add_frame (syms, vals, env)`  | Add a frame of local bindings |
@@ -597,7 +596,7 @@ which can then be extended with new primitives, types, etc. using
 | `scheme_lookup_value (sym, env)`      | Lookup the value of a variable |
 | `scheme_lookup_global (sym, env)`     | Lookup the value of a global |
 | `scheme_set_value (sym, val, env)`    | Set the value of a variable |
-|--|--|
+| --- | --- |
 Table 1: *Environment manipulation functions*
 
 ### Interpreter Interface
