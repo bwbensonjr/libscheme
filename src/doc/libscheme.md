@@ -1,14 +1,8 @@
----
-source: ../libscheme/src/doc/libscheme.pdf
-fetched-at: 2026-06-24
-converter: docling
----
-
 ## libscheme: Scheme as a C Library
 
-Brent W. Benson Jr. Harris Computer Systems
-
-Brent.Benson@mail.csd.harris.com
+Brent W. Benson Jr.  
+Harris Computer Systems  
+`Brent.Benson@mail.csd.harris.com`
 
 ## Abstract
 
